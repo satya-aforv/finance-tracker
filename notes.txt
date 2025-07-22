@@ -1,0 +1,7 @@
+Admin: admin@financetracker.com / password123
+Finance Manager: finance@financetracker.com / password123
+Investor: john@example.com / password123
+
+cd backend && npm run seed
+
+npm run dev

@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance Tracker API Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            background: #f8fafc;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .nav {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .nav h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+        }
+        
+        .nav-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .nav-link {
+            background: #e2e8f0;
+            color: #4a5568;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            background: #cbd5e0;
+            transform: translateY(-2px);
+        }
+        
+        .section {
+            background: white;
+            margin-bottom: 30px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .section-header {
+            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+            color: white;
+            padding: 20px;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .section-content {
+            padding: 30px;
+        }
+        
+        .endpoint {
+            margin-bottom: 40px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .endpoint-header {
+            background: #f7fafc;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .method {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.8rem;
+            margin-right: 10px;
+        }
+        
+        .method.get { background: #c6f6d5; color: #22543d; }
+        .method.post { background: #bee3f8; color: #2c5282; }
+        .method.put { background: #fbb6ce; color: #744210; }
+        .method.delete { background: #fed7d7; color: #742a2a; }
+        
+        .endpoint-url {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-weight: 500;
+            color: #2d3748;
+        }
+        
+        .endpoint-desc {
+            color: #718096;
+            margin-top: 5px;
+        }
+        
+        .endpoint-body {
+            padding: 20px;
+        }
+        
+        .curl-container {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 15px 0;
+            position: relative;
+            overflow-x: auto;
+        }
+        
+        .curl-code {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #4a5568;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        .copy-btn:hover {
+            background: #2d3748;
+        }
+        
+        .params {
+            margin: 15px 0;
+        }
+        
+        .params h4 {
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+        
+        .param {
+            background: #f7fafc;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border-left: 4px solid #4299e1;
+        }
+        
+        .param-name {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .param-type {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+        
+        .param-desc {
+            color: #4a5568;
+            margin-top: 5px;
+        }
+        
+        .auth-note {
+            background: #fff5d6;
+            border: 1px solid #fbd38d;
+            color: #744210;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        
+        .auth-note strong {
+            color: #2d3748;
+        }
+        
+        .sample-response {
+            background: #f0fff4;
+            border: 1px solid #9ae6b4;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        
+        .sample-response h4 {
+            color: #22543d;
+            margin-bottom: 10px;
+        }
+        
+        .response-code {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            color: #2d3748;
+            white-space: pre-wrap;
+        }
+        
+        .info-box {
+            background: #ebf8ff;
+            border: 1px solid #90cdf4;
+            color: #2c5282;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        
+        .footer {
+            text-align: center;
+            color: #718096;
+            margin-top: 50px;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Finance Tracker API Documentation</h1>
+            <p>Complete REST API documentation with curl examples for Postman</p>
+        </div>
+
+        <div class="nav">
+            <h3>Quick Navigation</h3>
+            <div class="nav-links">
+                <a href="#auth" class="nav-link">Authentication</a>
+                <a href="#users" class="nav-link">Users</a>
+                <a href="#investors" class="nav-link">Investors</a>
+                <a href="#plans" class="nav-link">Plans</a>
+                <a href="#investments" class="nav-link">Investments</a>
+                <a href="#payments" class="nav-link">Payments</a>
+                <a href="#reports" class="nav-link">Reports</a>
+                <a href="#settings" class="nav-link">Settings</a>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <strong>Base URL:</strong> http://localhost:5000/api<br>
+            <strong>Environment Variables:</strong> Make sure to set up your .env file with MONGODB_URI, JWT_SECRET, etc.
+        </div>
+
+        <!-- Authentication Section -->
+        <div class="section" id="auth">
+            <div class="section-header">Authentication</div>
+            <div class="section-content">
+                
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint-url">/auth/register</span>
+                        <div class="endpoint-desc">Register a new user</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X POST http://localhost:5000/api/auth/register \
+-H "Content-Type: application/json" \
+-d '{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "password123",
+  "role": "investor",
+  "phone": "9876543210"
+}'</div>
+                        </div>
+                        
+                        <div class="params">
+                            <h4>Request Body Parameters:</h4>
+                            <div class="param">
+                                <span class="param-name">name</span> <span class="param-type">(string, required)</span>
+                                <div class="param-desc">User's full name</div>
+                            </div>
+                            <div class="param">
+                                <span class="param-name">email</span> <span class="param-type">(string, required)</span>
+                                <div class="param-desc">Valid email address</div>
+                            </div>
+                            <div class="param">
+                                <span class="param-name">password</span> <span class="param-type">(string, required)</span>
+                                <div class="param-desc">Password (minimum 6 characters)</div>
+                            </div>
+                            <div class="param">
+                                <span class="param-name">role</span> <span class="param-type">(string, optional)</span>
+                                <div class="param-desc">User role: admin, finance_manager, investor (default: investor)</div>
+                            </div>
+                            <div class="param">
+                                <span class="param-name">phone</span> <span class="param-type">(string, optional)</span>
+                                <div class="param-desc">Phone number</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint-url">/auth/login</span>
+                        <div class="endpoint-desc">Login user and get JWT token</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X POST http://localhost:5000/api/auth/login \
+-H "Content-Type: application/json" \
+-d '{
+  "email": "admin@financetracker.com",
+  "password": "password123"
+}'</div>
+                        </div>
+                        
+                        <div class="sample-response">
+                            <h4>Sample Response:</h4>
+                            <div class="response-code">{
+  "success": true,
+  "message": "Login successful",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "64a7b8c9d1e2f3a4b5c6d7e8",
+    "name": "Admin User",
+    "email": "admin@financetracker.com",
+    "role": "admin"
+  }
+}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/auth/me</span>
+                        <div class="endpoint-desc">Get current user profile</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET http://localhost:5000/api/auth/me \
+-H "Authorization: Bearer YOUR_JWT_TOKEN"</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method put">PUT</span>
+                        <span class="endpoint-url">/auth/profile</span>
+                        <div class="endpoint-desc">Update user profile</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X PUT http://localhost:5000/api/auth/profile \
+-H "Authorization: Bearer YOUR_JWT_TOKEN" \
+-H "Content-Type: application/json" \
+-d '{
+  "name": "Updated Name",
+  "phone": "9876543211",
+  "currentPassword": "password123",
+  "newPassword": "newpassword123"
+}'</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="auth-note">
+                    <strong>Note:</strong> Save the JWT token from login response and use it in Authorization header for all protected endpoints: <code>Authorization: Bearer YOUR_JWT_TOKEN</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Section -->
+        <div class="section" id="users">
+            <div class="section-header">Users Management</div>
+            <div class="section-content">
+                
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/users</span>
+                        <div class="endpoint-desc">Get all users (Admin only)</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET "http://localhost:5000/api/users?page=1&limit=10&search=john&role=investor" \
+-H "Authorization: Bearer YOUR_JWT_TOKEN"</div>
+                        </div>
+                        
+                        <div class="params">
+                            <h4>Query Parameters:</h4>
+                            <div class="param">
+                                <span class="param-name">page</span> <span class="param-type">(number, optional)</span>
+                                <div class="param-desc">Page number (default: 1)</div>
+                            </div>
+                            <div class="param">
+                                <span class="param-name">limit</span> <span class="param-type">(number, optional)</span>
+                                <div class="param-desc">Items per page (default: 10, max: 100)</div>
+                            </div>
+                            <div class="param">
+                                <span class="param-name">search</span> <span class="param-type">(string, optional)</span>
+                                <div class="param-desc">Search by name or email</div>
+                            </div>
+                            <div class="param">
+                                <span class="param-name">role</span> <span class="param-type">(string, optional)</span>
+                                <div class="param-desc">Filter by role: admin, finance_manager, investor</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/users/:id</span>
+                        <div class="endpoint-desc">Get single user by ID</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET http://localhost:5000/api/users/64a7b8c9d1e2f3a4b5c6d7e8 \
+-H "Authorization: Bearer YOUR_JWT_TOKEN"</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method put">PUT</span>
+                        <span class="endpoint-url">/users/:id</span>
+                        <div class="endpoint-desc">Update user (Admin only)</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X PUT http://localhost:5000/api/users/64a7b8c9d1e2f3a4b5c6d7e8 \
+-H "Authorization: Bearer YOUR_JWT_TOKEN" \
+-H "Content-Type: application/json" \
+-d '{
+  "name": "Updated User Name",
+  "email": "updated@example.com",
+  "role": "finance_manager",
+  "isActive": true,
+  "phone": "9876543210"
+}'</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method delete">DELETE</span>
+                        <span class="endpoint-url">/users/:id</span>
+                        <div class="endpoint-desc">Delete user (Admin only)</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X DELETE http://localhost:5000/api/users/64a7b8c9d1e2f3a4b5c6d7e8 \
+-H "Authorization: Bearer YOUR_JWT_TOKEN"</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint-url">/users/:id/avatar</span>
+                        <div class="endpoint-desc">Upload user avatar</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X POST http://localhost:5000/api/users/64a7b8c9d1e2f3a4b5c6d7e8/avatar \
+-H "Authorization: Bearer YOUR_JWT_TOKEN" \
+-F "avatar=@/path/to/avatar.jpg"</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Investors Section -->
+        <div class="section" id="investors">
+            <div class="section-header">Investors Management</div>
+            <div class="section-content">
+                
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/investors</span>
+                        <div class="endpoint-desc">Get all investors (Admin/Finance Manager)</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET "http://localhost:5000/api/investors?page=1&limit=10&search=rajesh&status=active" \
+-H "Authorization: Bearer YOUR_JWT_TOKEN"</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint-url">/investors</span>
+                        <div class="endpoint-desc">Create new investor</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X POST http://localhost:5000/api/investors \
+-H "Authorization: Bearer YOUR_JWT_TOKEN" \
+-H "Content-Type: application/json" \
+-d '{
+  "name": "Rajesh Kumar",
+  "email": "rajesh@example.com",
+  "phone": "9876543210",
+  "address": {
+    "street": "123 MG Road",
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "pincode": "400001"
+  },
+  "kyc": {
+    "panNumber": "ABCDE1234F",
+    "aadharNumber": "123456789012",
+    "bankDetails": {
+      "accountNumber": "1234567890",
+      "ifscCode": "HDFC0001234",
+      "bankName": "HDFC Bank",
+      "branchName": "Mumbai Main Branch"
+    }
+  }
+}'</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/investors/:id</span>
+                        <div class="endpoint-desc">Get single investor with investments and payments</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET http://localhost:5000/api/investors/64a7b8c9d1e2f3a4b5c6d7e8 \
+-H "Authorization: Bearer YOUR_JWT_TOKEN"</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method put">PUT</span>
+                        <span class="endpoint-url">/investors/:id</span>
+                        <div class="endpoint-desc">Update investor</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X PUT http://localhost:5000/api/investors/64a7b8c9d1e2f3a4b5c6d7e8 \
+-H "Authorization: Bearer YOUR_JWT_TOKEN" \
+-H "Content-Type: application/json" \
+-d '{
+  "name": "Updated Name",
+  "email": "updated@example.com",
+  "phone": "9876543211",
+  "status": "active"
+}'</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint-url">/investors/:id/documents</span>
+                        <div class="endpoint-desc">Upload investor documents</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X POST http://localhost:5000/api/investors/64a7b8c9d1e2f3a4b5c6d7e8/documents \
+-H "Authorization: Bearer YOUR_JWT_TOKEN" \
+-F "documents=@/path/to/document1.pdf" \
+-F "documents=@/path/to/document2.pdf"</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/investors/stats/overview</span>
+                        <div class="endpoint-desc">Get investors overview statistics</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET http://localhost:5000/api/investors/stats/overview \
+-H "Authorization: Bearer YOUR_JWT_TOKEN"</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Plans Section -->
+        <div class="section" id="plans">
+            <div class="section-header">Investment Plans</div>
+            <div class="section-content">
+                
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/plans</span>
+                        <div class="endpoint-desc">Get all investment plans</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET "http://localhost:5000/api/plans?page=1&limit=10&search=gold&isActive=true&interestType=flat" \
+-H "Authorization: Bearer YOUR_JWT_TOKEN"</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/plans/active</span>
+                        <div class="endpoint-desc">Get all active plans for investment creation</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET http://localhost:5000/api/plans/active \
+-H "Authorization: Bearer YOUR_JWT_TOKEN"</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint-url">/plans</span>
+                        <div class="endpoint-desc">Create new investment plan</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X POST http://localhost:5000/api/plans \
+-H "Authorization: Bearer YOUR_JWT_TOKEN" \
+-H "Content-Type: application/json" \
+-d '{
+  "name": "Gold Plan Premium",
+  "description": "High return monthly interest plan",
+  "interestType": "flat",
+  "interestRate": 2.5,
+  "minInvestment": 50000,
+  "maxInvestment": 1000000,
+  "tenure": 12,
+  "interestPayoutFrequency": "monthly",
+  "principalRepayment": {
+    "percentage": 100,
+    "startFromMonth": 12
+  },
+  "features": ["Monthly Interest", "High Returns"],
+  "riskLevel": "medium"
+}'</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/plans/:id</span>
+                        <div class="endpoint-desc">Get single plan with investment statistics</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET http://localhost:5000/api/plans/64a7b8c9d1e2f3a4b5c6d7e8 \
+-H "Authorization: Bearer YOUR_JWT_TOKEN"</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint-url">/plans/:id/calculate</span>
+                        <div class="endpoint-desc">Calculate returns for a given principal amount</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X POST http://localhost:5000/api/plans/64a7b8c9d1e2f3a4b5c6d7e8/calculate \
+-H "Authorization: Bearer YOUR_JWT_TOKEN" \
+-H "Content-Type: application/json" \
+-d '{
+  "principalAmount": 100000
+}'</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method put">PUT</span>
+                        <span class="endpoint-url">/plans/:id</span>
+                        <div class="endpoint-desc">Update investment plan</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X PUT http://localhost:5000/api/plans/64a7b8c9d1e2f3a4b5c6d7e8 \
+-H "Authorization: Bearer YOUR_JWT_TOKEN" \
+-H "Content-Type: application/json" \
+-d '{
+  "name": "Updated Plan Name",
+  "isActive": false,
+  "description": "Updated description"
+}'</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/plans/stats/overview</span>
+                        <div class="endpoint-desc">Get plans overview statistics</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET http://localhost:5000/api/plans/stats/overview \
+-H "Authorization: Bearer YOUR_JWT_TOKEN"</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Investments Section -->
+        <div class="section" id="investments">
+            <div class="section-header">Investments Management</div>
+            <div class="section-content">
+                
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/investments</span>
+                        <div class="endpoint-desc">Get all investments with filters</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET "http://localhost:5000/api/investments?page=1&limit=10&status=active&search=INVST" \
+-H "Authorization: Bearer YOUR_JWT_TOKEN"</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint-url">/investments</span>
+                        <div class="endpoint-desc">Create new investment</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X POST http://localhost:5000/api/investments \
+-H "Authorization: Bearer YOUR_JWT_TOKEN" \
+-H "Content-Type: application/json" \
+-d '{
+  "investor": "64a7b8c9d1e2f3a4b5c6d7e8",
+  "plan": "64a7b8c9d1e2f3a4b5c6d7e9",
+  "principalAmount": 100000,
+  "investmentDate": "2024-01-15",
+  "notes": "First investment"
+}'</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/investments/:id</span>
+                        <div class="endpoint-desc">Get single investment with complete details</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET http://localhost:5000/api/investments/64a7b8c9d1e2f3a4b5c6d7e8 \
+-H "Authorization: Bearer YOUR_JWT_TOKEN"</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/investments/:id/schedule</span>
+                        <div class="endpoint-desc">Get investment payment schedule</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET http://localhost:5000/api/investments/64a7b8c9d1e2f3a4b5c6d7e8/schedule \
+-H "Authorization: Bearer YOUR_JWT_TOKEN"</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method put">PUT</span>
+                        <span class="endpoint-url">/investments/:id</span>
+                        <div class="endpoint-desc">Update investment</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X PUT http://localhost:5000/api/investments/64a7b8c9d1e2f3a4b5c6d7e8 \
+-H "Authorization: Bearer YOUR_JWT_TOKEN" \
+-H "Content-Type: application/json" \
+-d '{
+  "status": "completed",
+  "notes": "Investment completed successfully"
+}'</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/investments/stats/overview</span>
+                        <div class="endpoint-desc">Get investments overview statistics</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET http://localhost:5000/api/investments/stats/overview \
+-H "Authorization: Bearer YOUR_JWT_TOKEN"</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/investments/due/upcoming</span>
+                        <div class="endpoint-desc">Get upcoming due payments</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET "http://localhost:5000/api/investments/due/upcoming?days=7" \
+-H "Authorization: Bearer YOUR_JWT_TOKEN"</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payments Section -->
+        <div class="section" id="payments">
+            <div class="section-header">Payments Management</div>
+            <div class="section-content">
+                
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/payments</span>
+                        <div class="endpoint-desc">Get all payments with filters</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET "http://localhost:5000/api/payments?page=1&limit=10&status=completed&dateFrom=2024-01-01&dateTo=2024-12-31" \
+-H "Authorization: Bearer YOUR_JWT_TOKEN"</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint-url">/payments</span>
+                        <div class="endpoint-desc">Record new payment</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X POST http://localhost:5000/api/payments \
+-H "Authorization: Bearer YOUR_JWT_TOKEN" \
+-H "Content-Type: application/json" \
+-d '{
+  "investment": "64a7b8c9d1e2f3a4b5c6d7e8",
+  "scheduleMonth": 1,
+  "amount": 2500,
+  "paymentDate": "2024-02-15",
+  "paymentMethod": "bank_transfer",
+  "referenceNumber": "TXN123456789",
+  "type": "interest",
+  "interestAmount": 2500,
+  "principalAmount": 0,
+  "notes": "Monthly interest payment"
+}'</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/payments/:id</span>
+                        <div class="endpoint-desc">Get single payment details</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET http://localhost:5000/api/payments/64a7b8c9d1e2f3a4b5c6d7e8 \
+-H "Authorization: Bearer YOUR_JWT_TOKEN"</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method put">PUT</span>
+                        <span class="endpoint-url">/payments/:id</span>
+                        <div class="endpoint-desc">Update payment</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X PUT http://localhost:5000/api/payments/64a7b8c9d1e2f3a4b5c6d7e8 \
+-H "Authorization: Bearer YOUR_JWT_TOKEN" \
+-H "Content-Type: application/json" \
+-d '{
+  "status": "completed",
+  "verifiedBy": "64a7b8c9d1e2f3a4b5c6d7e9",
+  "notes": "Payment verified and processed"
+}'</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint-url">/payments/:id/receipt</span>
+                        <div class="endpoint-desc">Upload payment receipt</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X POST http://localhost:5000/api/payments/64a7b8c9d1e2f3a4b5c6d7e8/receipt \
+-H "Authorization: Bearer YOUR_JWT_TOKEN" \
+-F "receipt=@/path/to/receipt.pdf"</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/payments/stats/overview</span>
+                        <div class="endpoint-desc">Get payments overview statistics</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET http://localhost:5000/api/payments/stats/overview \
+-H "Authorization: Bearer YOUR_JWT_TOKEN"</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/payments/bulk/template</span>
+                        <div class="endpoint-desc">Download bulk payment upload template</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET http://localhost:5000/api/payments/bulk/template \
+-H "Authorization: Bearer YOUR_JWT_TOKEN" \
+-o bulk_payment_template.csv</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Section -->
+        <div class="section" id="reports">
+            <div class="section-header">Reports & Analytics</div>
+            <div class="section-content">
+                
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/reports/dashboard</span>
+                        <div class="endpoint-desc">Get dashboard summary report</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET http://localhost:5000/api/reports/dashboard \
+-H "Authorization: Bearer YOUR_JWT_TOKEN"</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/reports/investor-summary</span>
+                        <div class="endpoint-desc">Get investor-wise summary report</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET "http://localhost:5000/api/reports/investor-summary?startDate=2024-01-01&endDate=2024-12-31&status=active" \
+-H "Authorization: Bearer YOUR_JWT_TOKEN"</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/reports/plan-performance</span>
+                        <div class="endpoint-desc">Get plan-wise performance report</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET http://localhost:5000/api/reports/plan-performance \
+-H "Authorization: Bearer YOUR_JWT_TOKEN"</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/reports/payment-analysis</span>
+                        <div class="endpoint-desc">Get payment analysis report</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET "http://localhost:5000/api/reports/payment-analysis?startDate=2024-01-01&endDate=2024-12-31" \
+-H "Authorization: Bearer YOUR_JWT_TOKEN"</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/reports/overdue-payments</span>
+                        <div class="endpoint-desc">Get overdue payments report</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET http://localhost:5000/api/reports/overdue-payments \
+-H "Authorization: Bearer YOUR_JWT_TOKEN"</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/reports/export/investors</span>
+                        <div class="endpoint-desc">Export investor data as CSV</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET http://localhost:5000/api/reports/export/investors \
+-H "Authorization: Bearer YOUR_JWT_TOKEN" \
+-o investors_report.csv</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/reports/export/investments</span>
+                        <div class="endpoint-desc">Export investment data as CSV</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET http://localhost:5000/api/reports/export/investments \
+-H "Authorization: Bearer YOUR_JWT_TOKEN" \
+-o investments_report.csv</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/reports/export/payments</span>
+                        <div class="endpoint-desc">Export payment data as CSV</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET http://localhost:5000/api/reports/export/payments \
+-H "Authorization: Bearer YOUR_JWT_TOKEN" \
+-o payments_report.csv</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Section -->
+        <div class="section" id="settings">
+            <div class="section-header">System Settings</div>
+            <div class="section-content">
+                
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-url">/settings</span>
+                        <div class="endpoint-desc">Get system settings</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X GET http://localhost:5000/api/settings \
+-H "Authorization: Bearer YOUR_JWT_TOKEN"</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method put">PUT</span>
+                        <span class="endpoint-url">/settings</span>
+                        <div class="endpoint-desc">Update system settings (Admin only)</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X PUT http://localhost:5000/api/settings \
+-H "Authorization: Bearer YOUR_JWT_TOKEN" \
+-H "Content-Type: application/json" \
+-d '{
+  "company": {
+    "name": "Updated Company Name",
+    "email": "admin@company.com",
+    "phone": "+1-234-567-8900"
+  },
+  "financial": {
+    "defaultCurrency": "INR",
+    "defaultLateFee": 2.5,
+    "gracePeriodDays": 7
+  },
+  "notifications": {
+    "emailEnabled": true,
+    "paymentReminders": {
+      "enabled": true,
+      "daysBefore": 3
+    }
+  }
+}'</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint-url">/settings/logo</span>
+                        <div class="endpoint-desc">Upload company logo (Admin only)</div>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="curl-container">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                            <div class="curl-code">curl -X POST http://localhost:5000/api/settings/logo \
+-H "Authorization: Bearer YOUR_JWT_TOKEN" \
+-F "logo=@/path/to/company-logo.png"</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Information -->
+        <div class="section">
+            <div class="section-header">Additional Information</div>
+            <div class="section-content">
+                
+                <div class="info-box">
+                    <h4>🔐 Default Login Credentials (After Seeding)</h4>
+                    <ul style="margin-top: 10px;">
+                        <li><strong>Admin:</strong> admin@financetracker.com / password123</li>
+                        <li><strong>Finance Manager:</strong> finance@financetracker.com / password123</li>
+                        <li><strong>Investor:</strong> john@example.com / password123</li>
+                        <li><strong>Investor:</strong> sarah@example.com / password123</li>
+                    </ul>
+                </div>
+
+                <div class="auth-note">
+                    <h4>🚀 Getting Started</h4>
+                    <ol style="margin-top: 10px;">
+                        <li>Set up your .env file with required environment variables</li>
+                        <li>Run <code>npm run seed</code> to create sample data</li>
+                        <li>Start the server with <code>npm run dev</code></li>
+                        <li>Login using the default credentials to get JWT token</li>
+                        <li>Use the JWT token in Authorization header for all API calls</li>
+                    </ol>
+                </div>
+
+                <div class="sample-response">
+                    <h4>📝 Environment Variables Required</h4>
+                    <div class="response-code">PORT=5000
+NODE_ENV=development
+MONGODB_URI=mongodb://localhost:27017/finance-tracker
+JWT_SECRET=your-super-secret-jwt-key
+JWT_EXPIRE=7d
+CLIENT_URL=http://localhost:5173
+MAX_FILE_SIZE=5242880</div>
+                </div>
+
+                <div class="info-box">
+                    <h4>📚 File Upload Guidelines</h4>
+                    <ul style="margin-top: 10px;">
+                        <li><strong>Avatar:</strong> .jpg, .jpeg, .png, .gif (max 5MB)</li>
+                        <li><strong>Documents:</strong> .pdf, .doc, .docx, .jpg, .jpeg, .png (max 5MB)</li>
+                        <li><strong>Receipts:</strong> .pdf, .jpg, .jpeg, .png (max 5MB)</li>
+                        <li><strong>Agreements:</strong> .pdf, .doc, .docx (max 5MB)</li>
+                        <li><strong>Company Logo:</strong> .jpg, .jpeg, .png, .svg (max 5MB)</li>
+                    </ul>
+                </div>
+
+                <div class="auth-note">
+                    <h4>🔒 Role-Based Access Control</h4>
+                    <ul style="margin-top: 10px;">
+                        <li><strong>Admin:</strong> Full access to all endpoints</li>
+                        <li><strong>Finance Manager:</strong> Manage investors, plans, investments, payments</li>
+                        <li><strong>Investor:</strong> View own investments and payments only</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>&copy; 2024 Finance Tracker API Documentation</p>
+            <p>Built with Express.js, MongoDB, and JWT Authentication</p>
+        </div>
+    </div>
+
+    <script>
+        function copyToClipboard(button) {
+            const codeElement = button.nextElementSibling;
+            const code = codeElement.textContent;
+            
+            navigator.clipboard.writeText(code).then(function() {
+                button.textContent = 'Copied!';
+                button.style.background = '#10b981';
+                setTimeout(function() {
+                    button.textContent = 'Copy';
+                    button.style.background = '#4a5568';
+                }, 2000);
+            }, function(err) {
+                console.error('Could not copy text: ', err);
+            });
+        }
+
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
