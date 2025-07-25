@@ -16,7 +16,7 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: 'https://finance-tracker-backend-f7fh.onrender.com/api/health',
+        target: 'https://finance-tracker-backend-f7fh.onrender.com',
         changeOrigin: true,
         secure: false,
         configure: (proxy, _options) => {
