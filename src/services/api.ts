@@ -14,7 +14,7 @@ class ApiService {
     // Use proxy in development, direct URL in production
     const baseURL = import.meta.env.DEV 
       ? '/api'  // This will use Vite's proxy
-      : import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+      : import.meta.env.VITE_API_URL || 'https://finance-tracker-backend-f7fh.onrender.com/api/health/api';
 
     this.api = axios.create({
       baseURL,
