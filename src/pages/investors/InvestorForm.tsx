@@ -985,7 +985,7 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
               </div>
 
               {/* Permanent Address */}
-              <div>
+              <div className="bg-teal-50 p-6 rounded-lg shadow-sm">
                 <h4 className="text-md font-semibold text-gray-800 mb-2">
                   Permanent Address
                 </h4>
@@ -1076,9 +1076,9 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
 
           {/* Bank Details Tab */}
           {activeTab === "bankDetails" && (
-            <div className="space-y-6">
+            <div className="space-y-10">
               {/* Bank Details */}
-              <div>
+              <div className="bg-teal-50 p-6 rounded-lg shadow-sm">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
                   Bank Details
                 </h3>
@@ -1290,7 +1290,7 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
               </div>
 
               {/* Nominee Details (NEW) */}
-              <div>
+              <div className="bg-gray-50 p-6 rounded-lg shadow-sm">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
                   👤 Nominee Details
                 </h3>
@@ -1384,7 +1384,7 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
               </div>
 
               {/* KYC Information */}
-              <div>
+              <div className="bg-orange-50 p-6 rounded-lg shadow-sm mt-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
                   KYC Information
                 </h3>
@@ -1919,13 +1919,10 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
           {/* Referal Policy Tab */}
           {activeTab === "referalPolicy" && (
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">
-                Documents
-              </h3>
               {/* Referral Details */}
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
-                  👥 Referral Information
+                  Referral Information
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>

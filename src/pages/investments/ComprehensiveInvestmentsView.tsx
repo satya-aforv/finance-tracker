@@ -31,6 +31,7 @@ import { investmentsService } from "../../services/investments";
 import toast from "react-hot-toast";
 import InvestmentTimeline from "../../components/investments/InvestmentTimeline";
 import { useAuth } from "../../contexts/AuthContext";
+import DocumentManager from "../../components/investments/DocumentManager";
 
 const Button = ({
   children,
@@ -132,7 +133,11 @@ const Modal = ({ isOpen, onClose, title, children, size = "md" }) => {
   );
 };
 
-const ComprehensiveInvestorView = ({ investorId, onBack }) => {
+const ComprehensiveInvestmentsView = ({
+  investmentsData,
+  investmentId,
+  onBack,
+}) => {
   const { user } = useAuth();
   const [investor, setInvestor] = useState(null);
   const [investments, setInvestments] = useState([]);
@@ -142,19 +147,28 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
   const [showInvestmentForm, setShowInvestmentForm] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedPlanOption, setSelectedPlanOption] = useState("existing"); // 'existing' or 'new'
-
+  const investorId = investmentsData?.investor?._id || "";
   // Check if user can manage (admin/finance_manager)
   const canManage = user?.role === "admin" || user?.role === "finance_manager";
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState({
+    status: investment.status,
+    notes: investment.notes || "",
+  });
 
   // Fetch investor data
   useEffect(() => {
+    console.log(investmentsData, "investmentsData");
     const fetchInvestorData = async () => {
       try {
         setLoading(true);
+
         const [investorResponse, investmentsResponse, plansResponse] =
           await Promise.all([
             investorsService.getInvestor(investorId),
-            investmentsService.getInvestments({ investor: investorId }),
+            investmentsService.getInvestments({
+              investor: investorId,
+            }),
             plansService.getActivePlans(),
           ]);
 
@@ -164,7 +178,9 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
         setPlans(plansResponse.data || []);
       } catch (error) {
         console.error("Error fetching investor data:", error);
-        toast.error("Failed to load investor data");
+        if (canManage) {
+          toast.error("Failed to load investor data");
+        }
       } finally {
         setLoading(false);
       }
@@ -177,7 +193,7 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
 
   // Fetch investor data
   useEffect(() => {
-    const fetchInvestment = async (id = "687f12fd8c122c4487007e35") => {
+    const fetchInvestment = async (id: string) => {
       try {
         setLoading(true);
         const response = await investmentsService.getInvestment(id);
@@ -192,10 +208,10 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
       }
     };
 
-    if (investorId) {
-      fetchInvestment();
+    if (investmentsData?._id) {
+      fetchInvestment(investmentsData?._id);
     }
-  }, [investorId]);
+  }, [investmentsData?._id]);
 
   const formatCurrency = (amount) => {
     const numericAmount = parseFloat(amount) || 0;
@@ -270,26 +286,42 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
     );
   }
 
-  if (!investor) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <AlertTriangle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500">Investor not found</p>
-          {onBack && (
-            <Button onClick={onBack} variant="outline" className="mt-4">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Go Back
-            </Button>
-          )}
-        </div>
-      </div>
+  // if (!investor) {
+  //   return (
+  //     <div className="min-h-screen flex items-center justify-center">
+  //       <div className="text-center">
+  //         <AlertTriangle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+  //         <p className="text-gray-500">Investor not found</p>
+  //         {onBack && (
+  //           <Button onClick={onBack} variant="outline" className="mt-4">
+  //             <ArrowLeft className="h-4 w-4 mr-2" />
+  //             Go Back
+  //           </Button>
+  //         )}
+  //       </div>
+  //     </div>
+  //   );
+  // }
+
+  const handleCancelEdit = () => {
+    setEditData({
+      status: investment.status,
+      notes: investment.notes || "",
+    });
+    setIsEditing(false);
+  };
+
+  const getProgressPercentage = () => {
+    if (investment.totalExpectedReturns === 0) return 0;
+    return Math.round(
+      (investment.totalPaidAmount / investment.totalExpectedReturns) * 100
     );
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
+
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-4">
@@ -300,32 +332,107 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                   Back
                 </Button>
               )}
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {investor.name}
-                </h1>
-                <p className="text-sm text-gray-500">
-                  Investor ID: {investor.investorId}
-                </p>
+              {investor && (
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">
+                    {investor?.name}
+                  </h1>
+                  <p className="text-sm text-gray-500">
+                    Investor ID: {investor?.investorId}
+                  </p>
+                </div>
+              )}
+            </div>
+            {investor && (
+              <div className="flex items-center space-x-3">
+                {getStatusBadge(investor?.status)}
+                <Button
+                  onClick={() => setShowInvestmentForm(true)}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Investment
+                </Button>
               </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              {getStatusBadge(investor.status)}
-              <Button
-                onClick={() => setShowInvestmentForm(true)}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Investment
-              </Button>
-            </div>
+            )}
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {/* Enhanced Header with Edit Functionality */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 rounded-xl text-white shadow-lg mt-4"
+      >
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <div className="flex items-center space-x-4">
+              <h2 className="text-3xl font-bold">{investment?.investmentId}</h2>
+              {getStatusBadge(investment?.status)}
+            </div>
+            <p className="text-blue-100 mt-2">
+              Investment created on {formatDate(investment.createdAt)}
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 text-sm">
+              <div>
+                <span className="text-blue-200">Investor:</span>
+                <div className="font-medium">{investment?.investor?.name}</div>
+              </div>
+              <div>
+                <span className="text-blue-200">Plan:</span>
+                <div className="font-medium">{investment?.plan?.name}</div>
+              </div>
+              <div>
+                <span className="text-blue-200">Progress:</span>
+                <div className="font-medium">
+                  {getProgressPercentage()}% Complete
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            {canManage && !isEditing && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditing(true)}
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+            )}
+            {isEditing && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSaveEdit}
+                  className="bg-green-600 border-green-600 text-white hover:bg-green-700"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCancelEdit}
+                  className="bg-red-600 border-red-600 text-white hover:bg-red-700"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </motion.div>
+
+      <div className="max-w-7xl mt-4">
         {/* Quick Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -408,248 +515,308 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
               </div>
             </div>
           </motion.div>
-        </div>
+        </div> */}
 
-        {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-sm border">
+        {/* Enhanced Tab Navigation */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white rounded-lg shadow-sm border border-gray-200"
+        >
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-8 px-6">
               {[
-                { id: "overview", label: "Overview", icon: User },
-                { id: "investments", label: "Investments", icon: TrendingUp },
+                { id: "overview", label: "Overview", icon: TrendingUp },
                 { id: "schedule", label: "Payment Schedule", icon: Calendar },
-                { id: "timeline", label: "Activity Timeline", icon: Clock },
                 { id: "documents", label: "Documents", icon: FileText },
-                { id: "referal", label: "Referal Details", icon: Clock },
-              ].map((tab) => {
-                if (user?.role !== "admin" && tab.id === "referal") {
-                  return null;
-                } else {
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
-                        activeTab === tab.id
-                          ? "border-blue-500 text-blue-600"
-                          : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                      }`}
-                    >
-                      <tab.icon className="h-4 w-4" />
-                      <span>{tab.label}</span>
-                    </button>
-                  );
-                }
-              })}
+                { id: "timeline", label: "Activity Timeline", icon: Clock },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                    activeTab === tab.id
+                      ? "border-blue-500 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                >
+                  <tab.icon className="h-4 w-4" />
+                  <span>{tab.label}</span>
+                </button>
+              ))}
             </nav>
           </div>
 
+          {/* Tab Content */}
           <div className="p-6">
             {/* Overview Tab */}
             {activeTab === "overview" && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Personal Information */}
-                <div>
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="space-y-6"
+              >
+                {/* Quick Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg border border-green-200">
+                    <div className="flex items-center">
+                      <div className="p-3 bg-green-500 rounded-lg">
+                        <DollarSign className="h-6 w-6 text-white" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-green-700">
+                          Principal
+                        </p>
+                        <p className="text-xl font-bold text-green-900">
+                          {formatCurrency(investment.principalAmount)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg border border-blue-200">
+                    <div className="flex items-center">
+                      <div className="p-3 bg-blue-500 rounded-lg">
+                        <TrendingUp className="h-6 w-6 text-white" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-blue-700">
+                          Expected Returns
+                        </p>
+                        <p className="text-xl font-bold text-blue-900">
+                          {formatCurrency(investment.totalExpectedReturns)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-lg border border-purple-200">
+                    <div className="flex items-center">
+                      <div className="p-3 bg-purple-500 rounded-lg">
+                        <Calendar className="h-6 w-6 text-white" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-purple-700">
+                          Amount Paid
+                        </p>
+                        <p className="text-xl font-bold text-purple-900">
+                          {formatCurrency(investment.totalPaidAmount)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-lg border border-orange-200">
+                    <div className="flex items-center">
+                      <div className="p-3 bg-orange-500 rounded-lg">
+                        <Clock className="h-6 w-6 text-white" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-orange-700">
+                          Remaining
+                        </p>
+                        <p className="text-xl font-bold text-orange-900">
+                          {formatCurrency(investment.remainingAmount)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Progress Section */}
+                <div className="bg-white p-6 rounded-lg border border-gray-200">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Payment Progress
+                    </h3>
+                    <div className="text-right">
+                      <span className="text-2xl font-bold text-blue-600">
+                        {getProgressPercentage()}%
+                      </span>
+                      <p className="text-xs text-gray-500">Completed</p>
+                    </div>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-4">
+                    <div
+                      className="bg-gradient-to-r from-blue-500 to-blue-600 h-4 rounded-full transition-all duration-500 ease-out"
+                      style={{ width: `${getProgressPercentage()}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-500 mt-2">
+                    <span>
+                      Started: {formatDate(investment.investmentDate)}
+                    </span>
+                    <span>Maturity: {formatDate(investment.maturityDate)}</span>
+                  </div>
+                </div>
+
+                {/* Details Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Investment Details */}
+                  <div className="bg-white p-6 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <FileText className="h-5 w-5 mr-2 text-blue-500" />
+                      Investment Details
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Investment Date:</span>
+                        <span className="font-medium">
+                          {formatDate(investment.investmentDate)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Maturity Date:</span>
+                        <span className="font-medium">
+                          {formatDate(investment.maturityDate)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Interest Rate:</span>
+                        <span className="font-medium text-green-600">
+                          {investment.interestRate}% per month
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Interest Type:</span>
+                        <span className="font-medium capitalize">
+                          {investment.interestType}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Tenure:</span>
+                        <span className="font-medium">
+                          {investment.tenure} months
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2">
+                        <span className="text-gray-600">Status:</span>
+                        {isEditing ? (
+                          <select
+                            value={editData.status}
+                            onChange={(e) =>
+                              setEditData({
+                                ...editData,
+                                status: e.target.value as any,
+                              })
+                            }
+                            className="border border-gray-300 rounded px-2 py-1 text-sm"
+                          >
+                            <option value="active">Active</option>
+                            <option value="completed">Completed</option>
+                            <option value="closed">Closed</option>
+                            <option value="defaulted">Defaulted</option>
+                          </select>
+                        ) : (
+                          getStatusBadge(investment.status)
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Investor Details */}
+                  <div className="bg-white p-6 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <User className="h-5 w-5 mr-2 text-blue-500" />
+                      Investor Details
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Name:</span>
+                        <span className="font-medium">
+                          {investment?.investor?.name}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Investor ID:</span>
+                        <span className="font-medium text-blue-600">
+                          {investment?.investor?.investorId}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Email:</span>
+                        <span className="font-medium">
+                          {investment?.investor?.email}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Phone:</span>
+                        <span className="font-medium">
+                          {investment?.investor?.phone}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Plan Details */}
+                <div className="bg-white p-6 rounded-lg border border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Personal Information
+                    Plan Information
                   </h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-3">
-                      <User className="h-5 w-5 text-gray-400" />
-                      <div>
-                        <p className="text-sm text-gray-600">Full Name</p>
-                        <p className="font-medium">{investor.name}</p>
-                      </div>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                      <p className="text-gray-600 text-sm">Plan Name</p>
+                      <p className="font-semibold text-lg">
+                        {investment?.plan?.name}
+                      </p>
                     </div>
-                    <div className="flex items-center space-x-3">
-                      <Mail className="h-5 w-5 text-gray-400" />
-                      <div>
-                        <p className="text-sm text-gray-600">Email</p>
-                        <p className="font-medium">{investor.email}</p>
-                      </div>
+                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                      <p className="text-gray-600 text-sm">Plan ID</p>
+                      <p className="font-semibold text-lg text-blue-600">
+                        {investment?.plan?.planId}
+                      </p>
                     </div>
-                    <div className="flex items-center space-x-3">
-                      <Phone className="h-5 w-5 text-gray-400" />
-                      <div>
-                        <p className="text-sm text-gray-600">Phone</p>
-                        <p className="font-medium">{investor.phone}</p>
-                      </div>
+                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                      <p className="text-gray-600 text-sm">Interest Type</p>
+                      <p className="font-semibold text-lg capitalize">
+                        {investment?.plan?.interestType}
+                      </p>
                     </div>
-                    <div className="flex items-start space-x-3">
-                      <MapPin className="h-5 w-5 text-gray-400 mt-1" />
-                      <div>
-                        <p className="text-sm text-gray-600">Address</p>
-                        <p className="font-medium">
-                          {[
-                            investor.address?.street,
-                            investor.address?.city,
-                            investor.address?.state,
-                            investor.address?.pincode,
-                            investor.address?.country,
-                          ]
-                            .filter(Boolean)
-                            .join(", ")}
-                        </p>
-                      </div>
+                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                      <p className="text-gray-600 text-sm">Tenure</p>
+                      <p className="font-semibold text-lg">
+                        {investment?.plan?.tenure} months
+                      </p>
                     </div>
                   </div>
                 </div>
 
-                {/* KYC Information */}
-                <div>
+                {/* Notes Section */}
+                <div className="bg-white p-6 rounded-lg border border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    KYC Information
+                    Notes
                   </h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-3">
-                      <CreditCard className="h-5 w-5 text-gray-400" />
-                      <div>
-                        <p className="text-sm text-gray-600">PAN Number</p>
-                        <p className="font-medium">{investor.kyc?.panNumber}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <FileText className="h-5 w-5 text-gray-400" />
-                      <div>
-                        <p className="text-sm text-gray-600">Aadhar Number</p>
-                        <p className="font-medium">
-                          {investor.kyc?.aadharNumber
-                            ? `****-****-${investor.kyc.aadharNumber.slice(-4)}`
-                            : "Not provided"}
+                  {isEditing ? (
+                    <textarea
+                      value={editData.notes}
+                      onChange={(e) =>
+                        setEditData({ ...editData, notes: e.target.value })
+                      }
+                      rows={4}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Add notes about this investment..."
+                    />
+                  ) : (
+                    <div className="text-gray-700">
+                      {investment?.notes ? (
+                        <p className="whitespace-pre-wrap">
+                          {investment?.notes}
                         </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start space-x-3">
-                      <Building className="h-5 w-5 text-gray-400 mt-1" />
-                      <div>
-                        <p className="text-sm text-gray-600">Bank Details</p>
-                        <div className="space-y-1">
-                          <p className="font-medium">
-                            {investor.kyc?.bankDetails?.bankName}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {investor.kyc?.bankDetails?.branchName}
-                          </p>
-                          <p className="text-sm">
-                            IFSC: {investor.kyc?.bankDetails?.ifscCode}
-                          </p>
-                          <p className="text-sm">
-                            Account: ****
-                            {investor.kyc?.bankDetails?.accountNumber?.slice(
-                              -4
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                      <div>
-                        <p className="text-sm text-gray-600">KYC Status</p>
-                        <p className="font-medium text-green-600">
-                          {investor.kyc?.verificationStatus || "Pending"}
+                      ) : (
+                        <p className="text-gray-500 italic">
+                          No notes available
                         </p>
-                      </div>
+                      )}
                     </div>
-                  </div>
+                  )}
                 </div>
-              </div>
-            )}
-
-            {/* Investments Tab */}
-            {activeTab === "investments" && (
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Investment Portfolio
-                  </h3>
-                  <Button
-                    onClick={() => setShowInvestmentForm(true)}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add New Investment
-                  </Button>
-                </div>
-
-                {investments.length === 0 ? (
-                  <div className="text-center py-12">
-                    <TrendingUp className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                    <p className="text-gray-500 mb-4">No investments found</p>
-                    <Button
-                      onClick={() => setShowInvestmentForm(true)}
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      Create First Investment
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {investments.map((investment, index) => (
-                      <motion.div
-                        key={investment._id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
-                      >
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                          <div>
-                            <p className="text-sm text-gray-600">
-                              Investment ID
-                            </p>
-                            <p className="font-semibold text-blue-600">
-                              {investment.investmentId}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              {investment.plan?.name}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600">
-                              Principal Amount
-                            </p>
-                            <p className="font-semibold">
-                              {formatCurrency(investment.principalAmount)}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              {investment.plan?.interestRate}%{" "}
-                              {investment.plan?.interestType}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600">
-                              Investment Date
-                            </p>
-                            <p className="font-semibold">
-                              {formatDate(investment.investmentDate)}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Maturity: {formatDate(investment.maturityDate)}
-                            </p>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm text-gray-600">Status</p>
-                              {getStatusBadge(investment.status)}
-                            </div>
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
-                            </Button>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              </motion.div>
             )}
 
             {/* Schedule Tab */}
-            {investments &&
-            investments?.length > 0 &&
-            activeTab === "schedule" ? (
+            {activeTab === "schedule" && (
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -660,7 +827,7 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                     Payment Schedule
                   </h3>
                   <div className="text-sm text-gray-500">
-                    {investment.schedule.length} total payments
+                    {investment?.schedule?.length} total payments
                   </div>
                 </div>
 
@@ -695,7 +862,7 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {investment.schedule.map((payment, index) => (
+                      {investment?.schedule.map((payment, index) => (
                         <tr
                           key={index}
                           className="hover:bg-gray-50 transition-colors"
@@ -732,100 +899,35 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                   </table>
                 </div>
               </motion.div>
-            ) : (
-              activeTab === "schedule" && (
-                <div className="text-center py-12">
-                  <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-500">
-                    No payment schedule available for this investment
-                  </p>
-                </div>
-              )
             )}
-
-            {/* Timeline Tab */}
-            {investments && investments?.length > 0 && activeTab === "timeline"
-              ? investment && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                  >
-                    <InvestmentTimeline
-                      investmentId={investment?._id}
-                      isEditable={canManage}
-                    />
-                  </motion.div>
-                )
-              : activeTab === "timeline" && (
-                  <div className="text-center py-12">
-                    <Clock className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                    <p className="text-gray-500">
-                      No activity timeline available for this investment
-                    </p>
-                  </div>
-                )}
 
             {/* Documents Tab */}
             {activeTab === "documents" && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">
-                  Documents
-                </h3>
-                <div className="text-center py-12">
-                  <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-500">
-                    Document management coming soon
-                  </p>
-                </div>
-              </div>
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+              >
+                <DocumentManager
+                  investmentId={investment._id}
+                  isEditable={canManage}
+                />
+              </motion.div>
             )}
 
-            {/* Documents Tab */}
-            {activeTab === "referal" && user?.role === "admin" && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">
-                  Referral Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-white px-6 ">
-                    <p className="text-md text-gray-900">
-                      Referrer Name : {investor?.referralCode || "N/A"}
-                    </p>
-                  </div>
-                  <div className="bg-white px-6 ">
-                    <p className="text-md text-gray-900">
-                      Referrer Email : {investor?.referredBy?.name || "N/A"}
-                    </p>
-                  </div>
-                  <div className="bg-white px-6 ">
-                    <p className="text-md text-gray-900">
-                      Referrer Mobile :{" "}
-                      {formatCurrency(investor?.referralEarnings || 0)}
-                    </p>
-                  </div>
-                  <div className="bg-white px-6 ">
-                    <p className="text-md text-gray-900">
-                      Referrer Alt Mobile :{" "}
-                      {formatCurrency(investor?.referralEarnings || 0)}
-                    </p>
-                  </div>
-                  <div className="bg-white px-6 ">
-                    <p className="text-md text-gray-900">
-                      Relation with referrer :{" "}
-                      {formatCurrency(investor?.referralEarnings || 0)}
-                    </p>
-                  </div>
-                  <div className="bg-white px-6 ">
-                    <p className="text-md text-gray-900">
-                      Relation fee :{" "}
-                      {formatCurrency(investor?.referralEarnings || 0)}
-                    </p>
-                  </div>
-                </div>
-              </div>
+            {/* Timeline Tab */}
+            {activeTab === "timeline" && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+              >
+                <InvestmentTimeline
+                  investmentId={investment._id}
+                  isEditable={canManage}
+                />
+              </motion.div>
             )}
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Investment Creation Modal */}
@@ -1772,55 +1874,4 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
   );
 };
 
-// Example usage component
-const ExampleUsage = () => {
-  const [currentView, setCurrentView] = useState("list");
-  const [selectedInvestorId, setSelectedInvestorId] = useState(null);
-
-  if (currentView === "investor" && selectedInvestorId) {
-    return (
-      <ComprehensiveInvestorView
-        investorId={selectedInvestorId}
-        onBack={() => {
-          setCurrentView("list");
-          setSelectedInvestorId(null);
-        }}
-      />
-    );
-  }
-
-  return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold mb-6">Investor Management</h1>
-      <div className="space-y-4">
-        <div className="bg-white p-4 rounded-lg border">
-          <h3 className="font-medium mb-2">Sample Investors</h3>
-          <div className="space-y-2">
-            <Button
-              onClick={() => {
-                setSelectedInvestorId("sample-investor-1");
-                setCurrentView("investor");
-              }}
-              variant="outline"
-              className="w-full justify-start"
-            >
-              View Rajesh Kumar (INV001)
-            </Button>
-            <Button
-              onClick={() => {
-                setSelectedInvestorId("sample-investor-2");
-                setCurrentView("investor");
-              }}
-              variant="outline"
-              className="w-full justify-start"
-            >
-              View Priya Sharma (INV002)
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default ComprehensiveInvestorView;
+export default ComprehensiveInvestmentsView;

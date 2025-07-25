@@ -1,30 +1,48 @@
 // src/pages/investments/InvestmentsPage.tsx
-import React, { useState, useEffect } from 'react';
-import { Plus, Search, Eye, Edit, Calendar, TrendingUp, FileText, Clock, Download } from 'lucide-react';
-import { motion } from 'framer-motion';
-import Button from '../../components/common/Button';
-import Modal from '../../components/common/Modal';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { investmentsService } from '../../services/investments';
-import { Investment } from '../../types';
-import { useAuth } from '../../contexts/AuthContext';
-import toast from 'react-hot-toast';
-import InvestmentForm from './InvestmentForm';
-import InvestmentDetails from './InvestmentDetails';
+import React, { useState, useEffect } from "react";
+import {
+  Plus,
+  Search,
+  Eye,
+  Edit,
+  Calendar,
+  TrendingUp,
+  FileText,
+  Clock,
+  Download,
+} from "lucide-react";
+import { motion } from "framer-motion";
+import Button from "../../components/common/Button";
+import Modal from "../../components/common/Modal";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import { investmentsService } from "../../services/investments";
+import { Investment } from "../../types";
+import { useAuth } from "../../contexts/AuthContext";
+import toast from "react-hot-toast";
+import InvestmentForm from "./InvestmentForm";
+import InvestmentDetails from "./InvestmentDetails";
+import ComprehensiveInvestmentsView from "./ComprehensiveInvestmentsView";
 
 const InvestmentsPage: React.FC = () => {
   const { user } = useAuth();
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [selectedInvestment, setSelectedInvestment] = useState<Investment | null>(null);
-
-  const canManage = user?.role === 'admin' || user?.role === 'finance_manager';
+  const [investmentsData, setInvestmentsData] = useState<Investment[]>([]);
+  const [selectedInvestment, setSelectedInvestment] =
+    useState<Investment | null>(null);
+  const [currentView, setCurrentView] = useState<"list" | "comprehensive">(
+    "list"
+  );
+  const [selectedInvestmentId, setSelectedInvestmentId] = useState<
+    string | null
+  >(null);
+  const canManage = user?.role === "admin" || user?.role === "finance_manager";
 
   const fetchInvestments = async () => {
     try {
@@ -33,15 +51,17 @@ const InvestmentsPage: React.FC = () => {
         page: currentPage,
         limit: 10,
         search: searchTerm,
-        status: statusFilter
+        status: statusFilter,
       });
-      
+
       setInvestments(response.data || []);
       if (response.pagination) {
         setTotalPages(response.pagination.pages);
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to fetch investments');
+      toast.error(
+        error.response?.data?.message || "Failed to fetch investments"
+      );
     } finally {
       setLoading(false);
     }
@@ -54,11 +74,13 @@ const InvestmentsPage: React.FC = () => {
   const handleCreateInvestment = async (data: any) => {
     try {
       await investmentsService.createInvestment(data);
-      toast.success('Investment created successfully');
+      toast.success("Investment created successfully");
       setShowCreateModal(false);
       fetchInvestments();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create investment');
+      toast.error(
+        error.response?.data?.message || "Failed to create investment"
+      );
     }
   };
 
@@ -68,52 +90,62 @@ const InvestmentsPage: React.FC = () => {
       setSelectedInvestment(response.data);
       setShowDetailsModal(true);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to fetch investment details');
+      toast.error(
+        error.response?.data?.message || "Failed to fetch investment details"
+      );
     }
   };
 
   const handleUpdateInvestment = (updatedInvestment: Investment) => {
     setSelectedInvestment(updatedInvestment);
     // Update the investment in the list
-    setInvestments(prev => 
-      prev.map(inv => inv._id === updatedInvestment._id ? updatedInvestment : inv)
+    setInvestments((prev) =>
+      prev.map((inv) =>
+        inv._id === updatedInvestment._id ? updatedInvestment : inv
+      )
     );
   };
 
   const getStatusBadge = (status: string) => {
     const classes = {
-      active: 'bg-green-100 text-green-800 border-green-200',
-      completed: 'bg-blue-100 text-blue-800 border-blue-200',
-      closed: 'bg-gray-100 text-gray-800 border-gray-200',
-      defaulted: 'bg-red-100 text-red-800 border-red-200'
+      active: "bg-green-100 text-green-800 border-green-200",
+      completed: "bg-blue-100 text-blue-800 border-blue-200",
+      closed: "bg-gray-100 text-gray-800 border-gray-200",
+      defaulted: "bg-red-100 text-red-800 border-red-200",
     };
-    
+
     return (
-      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${classes[status as keyof typeof classes]}`}>
+      <span
+        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${
+          classes[status as keyof typeof classes]
+        }`}
+      >
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
       minimumFractionDigits: 0,
     }).format(amount);
   };
 
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return new Date(date).toLocaleDateString("en-IN", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
   const getProgressPercentage = (investment: Investment) => {
     if (investment.totalExpectedReturns === 0) return 0;
-    return Math.round((investment.totalPaidAmount / investment.totalExpectedReturns) * 100);
+    return Math.round(
+      (investment.totalPaidAmount / investment.totalExpectedReturns) * 100
+    );
   };
 
   const getDaysToMaturity = (maturityDate: string) => {
@@ -123,6 +155,37 @@ const InvestmentsPage: React.FC = () => {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
   };
+
+  const handleViewComprehensive = (
+    investmentId: string,
+    investmentPayload: any
+  ) => {
+    setSelectedInvestmentId(investmentId);
+    setCurrentView("comprehensive");
+    setInvestmentsData(investmentPayload);
+  };
+
+  const handleBackToList = () => {
+    setCurrentView("list");
+    setSelectedInvestmentId(null);
+    // Refresh the list when coming back
+    fetchInvestments();
+  };
+
+  // NEW: Conditional rendering for comprehensive view
+  if (
+    currentView === "comprehensive" &&
+    selectedInvestmentId &&
+    investmentsData
+  ) {
+    return (
+      <ComprehensiveInvestmentsView
+        investmentsData={investmentsData}
+        investmentId={selectedInvestmentId}
+        onBack={handleBackToList}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -135,14 +198,21 @@ const InvestmentsPage: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Investments</h1>
           <p className="text-gray-600 mt-1">
-            {canManage ? 'Manage all investments and track performance' : 'View your investment portfolio'}
+            {canManage
+              ? "Manage all investments and track performance"
+              : "View your investment portfolio"}
           </p>
           <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
             <span>Total: {investments.length}</span>
             <span>•</span>
-            <span>Active: {investments.filter(i => i.status === 'active').length}</span>
+            <span>
+              Active: {investments.filter((i) => i.status === "active").length}
+            </span>
             <span>•</span>
-            <span>Completed: {investments.filter(i => i.status === 'completed').length}</span>
+            <span>
+              Completed:{" "}
+              {investments.filter((i) => i.status === "completed").length}
+            </span>
           </div>
         </div>
         {canManage && (
@@ -235,10 +305,15 @@ const InvestmentsPage: React.FC = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {investments.map((investment) => {
                     const progress = getProgressPercentage(investment);
-                    const daysToMaturity = getDaysToMaturity(investment.maturityDate);
-                    
+                    const daysToMaturity = getDaysToMaturity(
+                      investment.maturityDate
+                    );
+
                     return (
-                      <tr key={investment._id} className="hover:bg-gray-50 transition-colors">
+                      <tr
+                        key={investment._id}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="space-y-1">
                             <div className="text-sm font-medium text-blue-600">
@@ -257,7 +332,7 @@ const InvestmentsPage: React.FC = () => {
                             </div>
                           </div>
                         </td>
-                        
+
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="space-y-1">
                             <div className="text-sm font-medium text-gray-900">
@@ -270,7 +345,8 @@ const InvestmentsPage: React.FC = () => {
                               {investment.plan.name}
                             </div>
                             <div className="text-xs text-gray-500">
-                              {investment.plan.interestRate}% {investment.plan.interestType}
+                              {investment.plan.interestRate}%{" "}
+                              {investment.plan.interestType}
                             </div>
                           </div>
                         </td>
@@ -281,13 +357,15 @@ const InvestmentsPage: React.FC = () => {
                               {formatCurrency(investment.principalAmount)}
                             </div>
                             <div className="text-xs text-green-600">
-                              Expected: {formatCurrency(investment.totalExpectedReturns)}
+                              Expected:{" "}
+                              {formatCurrency(investment.totalExpectedReturns)}
                             </div>
                             <div className="text-xs text-blue-600">
                               Paid: {formatCurrency(investment.totalPaidAmount)}
                             </div>
                             <div className="text-xs text-orange-600">
-                              Remaining: {formatCurrency(investment.remainingAmount)}
+                              Remaining:{" "}
+                              {formatCurrency(investment.remainingAmount)}
                             </div>
                           </div>
                         </td>
@@ -295,8 +373,12 @@ const InvestmentsPage: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-medium text-gray-700">{progress}%</span>
-                              <span className="text-xs text-gray-500">{investment.tenure}m</span>
+                              <span className="text-xs font-medium text-gray-700">
+                                {progress}%
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {investment.tenure}m
+                              </span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
                               <div
@@ -305,7 +387,12 @@ const InvestmentsPage: React.FC = () => {
                               ></div>
                             </div>
                             <div className="text-xs text-gray-500">
-                              {investment.schedule.filter(s => s.status === 'paid').length} of {investment.schedule.length} payments
+                              {
+                                investment.schedule.filter(
+                                  (s) => s.status === "paid"
+                                ).length
+                              }{" "}
+                              of {investment.schedule.length} payments
                             </div>
                           </div>
                         </td>
@@ -313,7 +400,9 @@ const InvestmentsPage: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="space-y-2">
                             {getStatusBadge(investment.status)}
-                            {investment.schedule.some(s => s.status === 'overdue') && (
+                            {investment.schedule.some(
+                              (s) => s.status === "overdue"
+                            ) && (
                               <div className="text-xs text-red-600 font-medium">
                                 Overdue payments
                               </div>
@@ -324,7 +413,16 @@ const InvestmentsPage: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center space-x-2">
                             <button
-                              onClick={() => handleViewDetails(investment)}
+                              onClick={() => {
+                                // if (canManage) {
+                                handleViewComprehensive(
+                                  investment._id,
+                                  investment
+                                );
+                                // } else {
+                                //   handleViewDetails(investment);
+                                // }
+                              }}
                               className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition-colors"
                               title="View Details"
                             >

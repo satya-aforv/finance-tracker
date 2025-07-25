@@ -1,5 +1,5 @@
 // src/pages/investors/InvestorsPage.tsx - Updated with Comprehensive View Integration
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Plus,
   Search,
@@ -65,7 +65,7 @@ const InvestorsPage: React.FC = () => {
     null
   );
 
-  const fetchInvestors = async () => {
+  const fetchInvestors = useCallback(async () => {
     try {
       setLoading(true);
       const response = await investorsService.getInvestors({
@@ -90,11 +90,17 @@ const InvestorsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, searchTerm, statusFilter, userAccountFilter]);
 
   useEffect(() => {
     fetchInvestors();
-  }, [currentPage, searchTerm, statusFilter, userAccountFilter]);
+  }, [
+    currentPage,
+    fetchInvestors,
+    searchTerm,
+    statusFilter,
+    userAccountFilter,
+  ]);
 
   // NEW: Handler for comprehensive view
   const handleViewComprehensive = (investorId: string) => {
@@ -367,6 +373,7 @@ const InvestorsPage: React.FC = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <input
                 type="text"
+                disabled={userAccountModal?.show}
                 placeholder="Search by name, email, or investor ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
