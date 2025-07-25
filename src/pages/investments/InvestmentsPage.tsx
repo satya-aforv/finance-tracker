@@ -414,14 +414,10 @@ const InvestmentsPage: React.FC = () => {
                           <div className="flex items-center space-x-2">
                             <button
                               onClick={() => {
-                                // if (canManage) {
                                 handleViewComprehensive(
                                   investment._id,
                                   investment
                                 );
-                                // } else {
-                                //   handleViewDetails(investment);
-                                // }
                               }}
                               className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition-colors"
                               title="View Details"

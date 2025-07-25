@@ -493,7 +493,7 @@ const InvestorsPage: React.FC = () => {
                             className="p-2 text-green-600 hover:text-green-900 hover:bg-green-50 rounded transition-colors"
                             title="View Comprehensive Details & Add Investments"
                           >
-                            <TrendingUp className="h-4 w-4" />
+                            <Eye className="h-4 w-4" />
                           </button>
 
                           {/* User Account Actions */}
