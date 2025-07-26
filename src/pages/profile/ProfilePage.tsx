@@ -29,9 +29,6 @@ export default function ProfilePage() {
     >
       <h1 className="text-2xl font-semibold mb-4">Profile</h1>
       <div className="p-6">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-1">
-          Profile Settings
-        </h2>
         <p className="text-sm text-gray-600 mb-6">
           Update your personal information
         </p>
