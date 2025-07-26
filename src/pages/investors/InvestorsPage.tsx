@@ -16,6 +16,7 @@ import {
   Download,
   Users,
   TrendingUp,
+  FilterIcon,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Button from "../../components/common/Button";
@@ -26,6 +27,7 @@ import { Investor } from "../../types";
 import toast from "react-hot-toast";
 import InvestorForm from "./InvestorForm";
 import ComprehensiveInvestorView from "./ComprehensiveInvestorView";
+import InvestorFilter, { InvestorFilterValues } from "./InvestorFilter";
 
 interface UserAccountModalState {
   show: boolean;
@@ -47,6 +49,7 @@ const InvestorsPage: React.FC = () => {
   const [selectedInvestor, setSelectedInvestor] = useState<Investor | null>(
     null
   );
+  const [showFliterOptions, setShowFilterOptions] = useState(false);
   const [userAccountModal, setUserAccountModal] =
     useState<UserAccountModalState>({
       show: false,
@@ -201,6 +204,11 @@ const InvestorsPage: React.FC = () => {
     } finally {
       setActionLoading((prev) => ({ ...prev, [loadingKey]: false }));
     }
+  };
+
+  const handleFilterChange = (filters: InvestorFilterValues) => {
+    console.log("Apply filters:", filters);
+    // Apply filtering logic here for your investor list
   };
 
   const handleResetPassword = async (
@@ -382,6 +390,13 @@ const InvestorsPage: React.FC = () => {
             </div>
           </div>
           <div className="flex gap-2">
+            <div className="border rounded-lg px-2 flex items-center space-x-2">
+              <FilterIcon
+                color="gray"
+                className="my-2 cursor-pointer"
+                onClick={() => setShowFilterOptions(true)}
+              />
+            </div>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -677,6 +692,18 @@ const InvestorsPage: React.FC = () => {
             generatePassword={generateTempPassword}
           />
         )}
+      </Modal>
+
+      <Modal
+        isOpen={showFliterOptions}
+        onClose={() => setShowFilterOptions(false)}
+        title={`Add filters`}
+        size="xl"
+      >
+        <InvestorFilter
+          onFilterChange={handleFilterChange}
+          onCancel={() => setShowFilterOptions(false)}
+        />
       </Modal>
     </div>
   );

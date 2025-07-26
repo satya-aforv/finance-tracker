@@ -331,7 +331,7 @@ export interface Payment {
   paymentDate: string;
   paymentMethod: 'cash' | 'cheque' | 'bank_transfer' | 'upi' | 'card' | 'other';
   referenceNumber?: string;
-  status: 'pending' | 'completed' | 'failed' | 'cancelled';
+  status: 'pending' | 'completed' | 'failed' | 'cancelled' | 'overdue';
   type: 'interest' | 'principal' | 'mixed' | 'penalty' | 'bonus';
   interestAmount: number;
   principalAmount: number;

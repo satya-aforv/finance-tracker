@@ -23,6 +23,7 @@ import {
   Info,
   Clock,
   Users2Icon,
+  MessageCircleCode,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm, useWatch } from "react-hook-form";
@@ -32,6 +33,9 @@ import { investmentsService } from "../../services/investments";
 import toast from "react-hot-toast";
 import InvestmentTimeline from "../../components/investments/InvestmentTimeline";
 import { useAuth } from "../../contexts/AuthContext";
+import DocumentManager from "../../components/investments/DocumentManager";
+import InvestmentPaymentForm from "../investments/InvestmentPaymentForm";
+import CreateRemarksForm from "../../components/common/CreateRemarksForm";
 
 const Button = ({
   children,
@@ -145,6 +149,9 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
   const [selectedPlanOption, setSelectedPlanOption] = useState("existing"); // 'existing' or 'new'
   const [expandedId, setExpandedId] = useState(null);
   const [investmentActiveTab, setInvestmentActiveTab] = useState("schedule");
+  const [showRemarksForm, setShowRemarksForm] = useState(false);
+  const [paymentSchedule, setPaymentSchedule] = useState(null);
+  const [showPaymentSchedule, setShowPaymentSchedule] = useState(false);
 
   // Check if user can manage (admin/finance_manager)
   const canManage = user?.role === "admin" || user?.role === "finance_manager";
@@ -241,6 +248,21 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
         {status?.charAt(0).toUpperCase() + status?.slice(1)}
       </span>
     );
+  };
+
+  const handleRemarksSubmit = async (data) => {
+    try {
+      await investmentsService.addRemarks(investmentId, data.remarks);
+      toast.success("Remarks added successfully");
+      setShowRemarksForm(false);
+
+      // Refresh investment data
+      const response = await investmentsService.getInvestment(investmentId);
+      setInvestment(response.data || []);
+    } catch (error) {
+      console.error("Error adding remarks:", error);
+      toast.error(error.response?.data?.message || "Failed to add remarks");
+    }
   };
 
   const handleCreateInvestment = async (data) => {
@@ -427,7 +449,7 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                 { id: "documents", label: "Documents", icon: FileText },
                 { id: "referal", label: "Referal Details", icon: Clock },
               ].map((tab) => {
-                if (user?.role !== "admin" && tab.id === "referal") {
+                if (user?.role === "investor" && tab.id === "referal") {
                   return null;
                 } else {
                   return (
@@ -452,48 +474,43 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
           <div className="p-6">
             {/* Overview Tab */}
             {activeTab === "overview" && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Personal Information */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Personal Information
-                  </h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-3">
-                      <User className="h-5 w-5 text-gray-400" />
-                      <div>
-                        <p className="text-sm text-gray-600">Full Name</p>
-                        <p className="font-medium">{investor.name}</p>
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="space-y-6"
+              >
+                {/* Details Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Investment Details */}
+                  <div className="bg-white p-6 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <User className="h-5 w-5 mr-2 text-blue-500" />
+                      Personal Information
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                        <span className="text-gray-600">Full Name:</span>
+                        <span className="font-medium">{investor.name}</span>
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <Mail className="h-5 w-5 text-gray-400" />
-                      <div>
-                        <p className="text-sm text-gray-600">Email</p>
-                        <p className="font-medium">{investor.email}</p>
+                      <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                        <span className="text-gray-600">Email:</span>
+                        <span className="font-medium">{investor.email}</span>
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <Phone className="h-5 w-5 text-gray-400" />
-                      <div>
-                        <p className="text-sm text-gray-600">Phone</p>
-                        <p className="font-medium">{investor.phone}</p>
+                      <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                        <span className="text-gray-600">Phone:</span>
+                        <span className="font-medium text-green-600">
+                          {investor.phone}
+                        </span>
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <Phone className="h-5 w-5 text-gray-400" />
-                      <div>
-                        <p className="text-sm text-gray-600">Alternate Phone</p>
-                        <p className="font-medium">
+                      <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                        <span className="text-gray-600">Alternate Phone:</span>
+                        <span className="font-medium capitalize">
                           {investor?.altPhone || "N/A"}
-                        </p>
+                        </span>
                       </div>
-                    </div>
-                    <div className="flex items-start space-x-3">
-                      <MapPin className="h-5 w-5 text-gray-400 mt-1" />
-                      <div>
-                        <p className="text-sm text-gray-600">Present Address</p>
-                        <p className="font-medium">
+                      <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                        <span className="text-gray-600">Present Address:</span>
+                        <span className="font-medium">
                           {investor?.address?.present
                             ? [
                                 investor?.address?.present?.street,
@@ -505,16 +522,13 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                                 .filter(Boolean)
                                 .join(", ")
                             : "N/A"}
-                        </p>
+                        </span>
                       </div>
-                    </div>
-                    <div className="flex items-start space-x-3">
-                      <MapPin className="h-5 w-5 text-gray-400 mt-1" />
-                      <div>
-                        <p className="text-sm text-gray-600">
-                          Permanent Address
-                        </p>
-                        <p className="font-medium">
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-gray-600">
+                          Permanent Address:
+                        </span>
+                        <span className="font-medium">
                           {investor?.address?.permanent
                             ? [
                                 investor?.address?.permanent?.street,
@@ -526,91 +540,113 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                                 .filter(Boolean)
                                 .join(", ")
                             : "N/A"}
-                        </p>
+                        </span>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* KYC Information */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    KYC Information
-                  </h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-3">
-                      <CreditCard className="h-5 w-5 text-gray-400" />
-                      <div>
-                        <p className="text-sm text-gray-600">PAN Number</p>
-                        <p className="font-medium">{investor.kyc?.panNumber}</p>
+                  {/* Bank Details */}
+                  <div className="bg-white p-6 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <User className="h-5 w-5 mr-2 text-blue-500" />
+                      Bank Details
+                    </h3>
+                    <div className="space-y-4 mb-10">
+                      <div className="flex justify-between items-center border-b border-gray-100">
+                        <span className="text-gray-600">Bank Name:</span>
+                        <span className="font-medium">
+                          {investor.kyc?.bankDetails?.bankName}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center border-b border-gray-100">
+                        <span className="text-gray-600">Branch Name:</span>
+                        <span className="font-medium text-blue-600">
+                          {investor.kyc?.bankDetails?.branchName}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center border-b border-gray-100">
+                        <span className="text-gray-600"> IFSC:</span>
+                        <span className="font-medium text-blue-600">
+                          {investor.kyc?.bankDetails?.ifscCode}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center border-b border-gray-100">
+                        <span className="text-gray-600"> Account:</span>
+                        <span className="font-medium text-blue-600">
+                          ****
+                          {investor.kyc?.bankDetails?.accountNumber?.slice(-4)}
+                        </span>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-3">
-                      <FileText className="h-5 w-5 text-gray-400" />
-                      <div>
-                        <p className="text-sm text-gray-600">Aadhar Number</p>
-                        <p className="font-medium">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <User className="h-5 w-5 mr-2 text-blue-500" />
+                      KYC Information
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center border-b border-gray-100">
+                        <span className="text-gray-600">PAN Numbe:</span>
+                        <span className="font-medium">
+                          {investor.kyc?.panNumber}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center border-b border-gray-100">
+                        <span className="text-gray-600">Aadhar Number:</span>
+                        <span className="font-medium text-blue-600">
                           {investor.kyc?.aadharNumber
                             ? `****-****-${investor.kyc.aadharNumber.slice(-4)}`
                             : "Not provided"}
-                        </p>
+                        </span>
                       </div>
                     </div>
-                    <div className="flex items-start space-x-3">
-                      <Building className="h-5 w-5 text-gray-400 mt-1" />
-                      <div>
-                        <p className="text-sm text-gray-600">Bank Details</p>
-                        <div className="space-y-1">
-                          <p className="font-medium">
-                            {investor.kyc?.bankDetails?.bankName}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {investor.kyc?.bankDetails?.branchName}
-                          </p>
-                          <p className="text-sm">
-                            IFSC: {investor.kyc?.bankDetails?.ifscCode}
-                          </p>
-                          <p className="text-sm">
-                            Account: ****
-                            {investor.kyc?.bankDetails?.accountNumber?.slice(
-                              -4
-                            )}
-                          </p>
-                        </div>
+                  </div>
+
+                  {/* Nominee Details */}
+                  <div className="bg-white p-6 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <User className="h-5 w-5 mr-2 text-blue-500" />
+                      Nominee Details
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                        <span className="text-gray-600">Name:</span>
+                        <span className="font-medium">
+                          {investor?.nominee?.name || "N/A"}
+                        </span>
                       </div>
-                    </div>
-                    <div className="flex items-start space-x-3">
-                      <Users2Icon className="h-5 w-5 text-gray-400 mt-1" />
-                      <div>
-                        <p className="text-sm text-gray-600">Nominee Details</p>
-                        <div className="space-y-1">
-                          <p className="font-medium">
-                            Name: {investor?.nominee?.name || "N/A"}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            Email: {investor?.nominee?.email || "N/A"}
-                          </p>
-                          <p className="text-sm">
-                            Mobile: {investor?.nominee?.mobile || "N/A"}
-                          </p>
-                          <p className="text-sm">
-                            Relation: {investor?.nominee?.relation || "N/A"}
-                          </p>
-                        </div>
+                      <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                        <span className="text-gray-600">Email:</span>
+                        <span className="font-medium">
+                          {investor?.nominee?.email || "N/A"}
+                        </span>
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                      <div>
-                        <p className="text-sm text-gray-600">KYC Status</p>
-                        <p className="font-medium text-green-600">
+                      <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                        <span className="text-gray-600"> Mobile:</span>
+                        <span className="font-medium">
+                          {investor?.nominee?.mobile || "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                        <span className="text-gray-600"> Relation:</span>
+                        <span className="font-medium">
+                          {investor?.nominee?.relation || "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                        <span className="text-gray-600"> KYC Status:</span>
+                        <span
+                          className={`font-medium ${
+                            investor.kyc?.verificationStatus === "pending"
+                              ? "text-orange-600"
+                              : "text-blue-600"
+                          }`}
+                        >
                           {investor.kyc?.verificationStatus || "Pending"}
-                        </p>
+                        </span>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {/* Investments Tab */}
@@ -652,10 +688,7 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                           transition={{ delay: index * 0.1 }}
                           className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
                         >
-                          <div
-                            key={investment.investmentId}
-                            className="border rounded-lg p-4 bg-white transition-all duration-300 ease-in-out"
-                          >
+                          <div key={investment.investmentId} className="">
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                               <div>
                                 <p className="text-sm text-gray-600">
@@ -767,117 +800,144 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                                   <div className="p-6">
                                     {/* Schedule Tab */}
                                     {investments &&
-                                    investments?.length > 0 &&
-                                    investmentActiveTab === "schedule" ? (
-                                      <motion.div
-                                        initial={{ opacity: 0, x: 20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        className="space-y-4"
-                                      >
-                                        <div className="flex justify-between items-center">
-                                          <h3 className="text-lg font-semibold text-gray-900">
-                                            Payment Schedule
-                                          </h3>
-                                          <div className="text-sm text-gray-500">
-                                            {investment.schedule.length} total
-                                            payments
-                                          </div>
-                                        </div>
-
-                                        <div className="overflow-x-auto bg-white rounded-lg border border-gray-200">
-                                          <table className="min-w-full divide-y divide-gray-200">
-                                            <thead className="bg-gray-50">
-                                              <tr>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                  Month
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                  Due Date
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                  Interest
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                  Principal
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                  Total Amount
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                  Paid Amount
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                  Balance
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                  Status
-                                                </th>
-                                              </tr>
-                                            </thead>
-                                            <tbody className="bg-white divide-y divide-gray-200">
-                                              {investment.schedule.map(
-                                                (payment, index) => (
-                                                  <tr
-                                                    key={index}
-                                                    className="hover:bg-gray-50 transition-colors"
-                                                  >
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                      #{payment.month}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                      {formatDate(
-                                                        payment.dueDate
-                                                      )}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                      {formatCurrency(
-                                                        payment.interestAmount
-                                                      )}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                      {formatCurrency(
-                                                        payment.principalAmount
-                                                      )}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                      {formatCurrency(
-                                                        payment.totalAmount
-                                                      )}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
-                                                      {formatCurrency(
-                                                        payment.paidAmount
-                                                      )}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-medium">
-                                                      {formatCurrency(
-                                                        payment.totalAmount -
-                                                          payment.paidAmount
-                                                      )}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                      {getStatusBadge(
-                                                        payment.status
-                                                      )}
-                                                    </td>
-                                                  </tr>
-                                                )
-                                              )}
-                                            </tbody>
-                                          </table>
-                                        </div>
-                                      </motion.div>
-                                    ) : (
+                                      investments?.length > 0 &&
                                       investmentActiveTab === "schedule" && (
-                                        <div className="text-center py-12">
-                                          <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                                          <p className="text-gray-500">
-                                            No payment schedule available for
-                                            this investment
-                                          </p>
-                                        </div>
-                                      )
-                                    )}
+                                        <motion.div
+                                          initial={{ opacity: 0, x: 20 }}
+                                          animate={{ opacity: 1, x: 0 }}
+                                          className="space-y-4"
+                                        >
+                                          <div className="flex justify-between items-center">
+                                            <h3 className="text-lg font-semibold text-gray-900">
+                                              Payment Schedule
+                                            </h3>
+                                            <div className="text-sm text-gray-500">
+                                              {investment?.schedule?.length}{" "}
+                                              total payments
+                                            </div>
+                                          </div>
+
+                                          <div className="overflow-x-auto bg-white rounded-lg border border-gray-200">
+                                            <table className="min-w-full divide-y divide-gray-200">
+                                              <thead className="bg-gray-50">
+                                                <tr>
+                                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Month
+                                                  </th>
+                                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Due Date
+                                                  </th>
+                                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Interest
+                                                  </th>
+                                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Principal
+                                                  </th>
+                                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Total Amount
+                                                  </th>
+                                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Paid Amount
+                                                  </th>
+                                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Balance
+                                                  </th>
+                                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Status
+                                                  </th>
+                                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Remarks
+                                                  </th>
+                                                </tr>
+                                              </thead>
+                                              <tbody className="bg-white divide-y divide-gray-200">
+                                                {investment?.schedule.map(
+                                                  (payment, index) => (
+                                                    <tr
+                                                      key={index}
+                                                      className="hover:bg-gray-50 transition-colors"
+                                                    >
+                                                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                        #{payment.month}
+                                                      </td>
+                                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                        {formatDate(
+                                                          payment.dueDate
+                                                        )}
+                                                      </td>
+                                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                        {formatCurrency(
+                                                          payment.interestAmount
+                                                        )}
+                                                      </td>
+                                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                        {formatCurrency(
+                                                          payment.principalAmount
+                                                        )}
+                                                      </td>
+                                                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                        {formatCurrency(
+                                                          payment.totalAmount
+                                                        )}
+                                                      </td>
+                                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
+                                                        {formatCurrency(
+                                                          payment.paidAmount
+                                                        )}
+                                                      </td>
+                                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-medium">
+                                                        {formatCurrency(
+                                                          payment.totalAmount -
+                                                            payment.paidAmount
+                                                        )}
+                                                      </td>
+                                                      <td className="px-6 py-4 whitespace-nowrap">
+                                                        {getStatusBadge(
+                                                          payment.status
+                                                        )}
+                                                      </td>
+                                                      <td className="px-6 w-20 py-4 justify-space-between whitespace-nowrap">
+                                                        <div className="flex items-center space-x-2">
+                                                          <span title="Add Remarks">
+                                                            <MessageCircleCode
+                                                              onClick={() => {
+                                                                setPaymentSchedule(
+                                                                  payment
+                                                                );
+                                                                setShowRemarksForm(
+                                                                  true
+                                                                );
+                                                              }}
+                                                              className="h-5 w-5 text-blue-600 cursor-pointer"
+                                                            />
+                                                          </span>
+
+                                                          {payment?.status ===
+                                                            "overdue" && (
+                                                            <span title="Record Payment">
+                                                              <CreditCard
+                                                                onClick={() => {
+                                                                  setPaymentSchedule(
+                                                                    payment
+                                                                  );
+                                                                  setShowPaymentSchedule(
+                                                                    true
+                                                                  );
+                                                                }}
+                                                                className="h-5 w-5 text-green-600 cursor-pointer ml-2"
+                                                              />
+                                                            </span>
+                                                          )}
+                                                        </div>
+                                                      </td>
+                                                    </tr>
+                                                  )
+                                                )}
+                                              </tbody>
+                                            </table>
+                                          </div>
+                                        </motion.div>
+                                      )}
 
                                     {/* Timeline Tab */}
                                     {investments &&
@@ -918,62 +978,78 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
 
             {/* Documents Tab */}
             {activeTab === "documents" && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">
-                  Documents
-                </h3>
-                <div className="text-center py-12">
-                  <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-500">
-                    Document management coming soon
-                  </p>
-                </div>
-              </div>
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+              >
+                <DocumentManager
+                  investmentId={investment._id}
+                  isEditable={canManage}
+                />
+              </motion.div>
             )}
 
             {/* Referal Tab */}
-            {activeTab === "referal" && user?.role === "admin" && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">
-                  Referral Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-white px-6 ">
-                    <p className="text-md text-gray-900">
-                      Referrer Name : {investor?.referralCode || "N/A"}
-                    </p>
-                  </div>
-                  <div className="bg-white px-6 ">
-                    <p className="text-md text-gray-900">
-                      Referrer Email : {investor?.referredBy?.name || "N/A"}
-                    </p>
-                  </div>
-                  <div className="bg-white px-6 ">
-                    <p className="text-md text-gray-900">
-                      Referrer Mobile :{" "}
-                      {formatCurrency(investor?.referralEarnings || 0)}
-                    </p>
-                  </div>
-                  <div className="bg-white px-6 ">
-                    <p className="text-md text-gray-900">
-                      Referrer Alt Mobile :{" "}
-                      {formatCurrency(investor?.referralEarnings || 0)}
-                    </p>
-                  </div>
-                  <div className="bg-white px-6 ">
-                    <p className="text-md text-gray-900">
-                      Relation with referrer :{" "}
-                      {formatCurrency(investor?.referralEarnings || 0)}
-                    </p>
-                  </div>
-                  <div className="bg-white px-6 ">
-                    <p className="text-md text-gray-900">
-                      Relation fee :{" "}
-                      {formatCurrency(investor?.referralEarnings || 0)}
-                    </p>
+            {activeTab === "referal" && canManage && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="space-y-6"
+              >
+                {/* Details Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
+                  {/* Investment Details */}
+                  <div className="bg-white p-6 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <User className="h-5 w-5 mr-2 text-blue-500" />
+                      Referral Information
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                        <span className="text-gray-600">Referrer Name:</span>
+                        <span className="font-medium">
+                          {investor?.referralCode || "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                        <span className="text-gray-600">Referrer Email:</span>
+                        <span className="font-medium">
+                          {" "}
+                          {investor?.referredBy?.name || "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                        <span className="text-gray-600">Referrer Mobile:</span>
+                        <span className="font-medium text-green-600">
+                          {investor?.referredBy?.mobile || "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                        <span className="text-gray-600">
+                          Referrer Alt Mobile:
+                        </span>
+                        <span className="font-medium capitalize">
+                          {investor?.referredBy?.altMobile || "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                        <span className="text-gray-600">
+                          Relation with referrer:
+                        </span>
+                        <span className="font-medium">
+                          {investor?.referredBy?.relation || "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-gray-600">Referal fee:</span>
+                        <span className="font-medium">
+                          {investor?.referredBy?.referalFee || "N/A"}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
         </div>
@@ -991,6 +1067,38 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
           plans={plans}
           onSubmit={handleCreateInvestment}
           onCancel={() => setShowInvestmentForm(false)}
+        />
+      </Modal>
+
+      {/* Remarks Creation Modal */}
+      <Modal
+        isOpen={showRemarksForm}
+        onClose={() => setShowRemarksForm(false)}
+        title={`Add Remarks for ${investment?.investmentId}`}
+        size="md"
+      >
+        <CreateRemarksForm
+          investmentId={investment?._id}
+          investment={investment}
+          paymentSchedule={paymentSchedule}
+          onSubmit={handleRemarksSubmit}
+          onCancel={() => setShowRemarksForm(false)}
+        />
+      </Modal>
+
+      {/* Remarks Creation Modal */}
+      <Modal
+        isOpen={showPaymentSchedule}
+        onClose={() => setShowPaymentSchedule(false)}
+        title={`Record payment for ${investment?.investmentId}`}
+        size="xl"
+      >
+        <InvestmentPaymentForm
+          investmentId={investment._id}
+          investment={investment}
+          paymentSchedule={paymentSchedule}
+          onSubmit={handleRemarksSubmit}
+          onCancel={() => setShowPaymentSchedule(false)}
         />
       </Modal>
     </div>

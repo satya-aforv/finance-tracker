@@ -1,26 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Search, Eye, Upload, Download } from 'lucide-react';
-import { motion } from 'framer-motion';
-import Button from '../../components/common/Button';
-import Modal from '../../components/common/Modal';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { paymentsService } from '../../services/payments';
-import { Payment } from '../../types';
-import { useAuth } from '../../contexts/AuthContext';
-import toast from 'react-hot-toast';
-import PaymentForm from './PaymentForm';
+import React, { useState, useEffect } from "react";
+import {
+  Plus,
+  Search,
+  Eye,
+  Upload,
+  Download,
+  FilterIcon,
+  CreditCard,
+} from "lucide-react";
+import { motion } from "framer-motion";
+import Button from "../../components/common/Button";
+import Modal from "../../components/common/Modal";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import { paymentsService } from "../../services/payments";
+import { Payment } from "../../types";
+import { useAuth } from "../../contexts/AuthContext";
+import toast from "react-hot-toast";
+import PaymentForm from "./PaymentForm";
+import PaymentsFilter, { PaymentsFilterValues } from "./PaymentsFilter";
+import InvestmentPaymentForm from "../investments/InvestmentPaymentForm";
+import PaymentRecordForm from "./PaymentRecordForm";
 
 const PaymentsPage: React.FC = () => {
   const { user } = useAuth();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showFliterOptions, setShowFilterOptions] = useState(false);
+  const [paymentSchedule, setPaymentSchedule] = useState(null);
+  const [showPaymentSchedule, setShowPaymentSchedule] = useState(false);
 
-  const canManage = user?.role === 'admin' || user?.role === 'finance_manager';
+  const canManage = user?.role === "admin" || user?.role === "finance_manager";
 
   const fetchPayments = async () => {
     try {
@@ -29,15 +43,15 @@ const PaymentsPage: React.FC = () => {
         page: currentPage,
         limit: 10,
         search: searchTerm,
-        status: statusFilter
+        status: statusFilter,
       });
-      
+
       setPayments(response.data || []);
       if (response.pagination) {
         setTotalPages(response.pagination.pages);
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to fetch payments');
+      toast.error(error.response?.data?.message || "Failed to fetch payments");
     } finally {
       setLoading(false);
     }
@@ -50,24 +64,43 @@ const PaymentsPage: React.FC = () => {
   const handleCreatePayment = async (data: any) => {
     try {
       await paymentsService.createPayment(data);
-      toast.success('Payment recorded successfully');
+      toast.success("Payment recorded successfully");
       setShowCreateModal(false);
       fetchPayments();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to record payment');
+      toast.error(error.response?.data?.message || "Failed to record payment");
+    }
+  };
+
+  const handleFilterChange = (filters: PaymentsFilterValues) => {
+    console.log("Apply filters:", filters);
+    // Apply filtering logic here for your investor list
+  };
+  const handleRecordSubmit = async (data: any) => {
+    try {
+      // await paymentsService.recordPayment(data);
+      toast.success("Payment recorded successfully");
+      setShowPaymentSchedule(false);
+      fetchPayments();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to record payment");
     }
   };
 
   const getStatusBadge = (status: string) => {
     const classes = {
-      completed: 'bg-green-100 text-green-800',
-      pending: 'bg-yellow-100 text-yellow-800',
-      failed: 'bg-red-100 text-red-800',
-      cancelled: 'bg-gray-100 text-gray-800'
+      completed: "bg-green-100 text-green-800",
+      pending: "bg-yellow-100 text-yellow-800",
+      failed: "bg-red-100 text-red-800",
+      cancelled: "bg-gray-100 text-gray-800",
     };
-    
+
     return (
-      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${classes[status as keyof typeof classes]}`}>
+      <span
+        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+          classes[status as keyof typeof classes]
+        }`}
+      >
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
@@ -75,31 +108,35 @@ const PaymentsPage: React.FC = () => {
 
   const getMethodBadge = (method: string) => {
     const classes = {
-      cash: 'bg-green-100 text-green-800',
-      cheque: 'bg-blue-100 text-blue-800',
-      bank_transfer: 'bg-purple-100 text-purple-800',
-      upi: 'bg-orange-100 text-orange-800',
-      card: 'bg-pink-100 text-pink-800',
-      other: 'bg-gray-100 text-gray-800'
+      cash: "bg-green-100 text-green-800",
+      cheque: "bg-blue-100 text-blue-800",
+      bank_transfer: "bg-purple-100 text-purple-800",
+      upi: "bg-orange-100 text-orange-800",
+      card: "bg-pink-100 text-pink-800",
+      other: "bg-gray-100 text-gray-800",
     };
-    
+
     return (
-      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${classes[method as keyof typeof classes]}`}>
-        {method.replace('_', ' ').toUpperCase()}
+      <span
+        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+          classes[method as keyof typeof classes]
+        }`}
+      >
+        {method.replace("_", " ").toUpperCase()}
       </span>
     );
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
       minimumFractionDigits: 0,
     }).format(amount);
   };
 
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-IN');
+    return new Date(date).toLocaleDateString("en-IN");
   };
 
   return (
@@ -113,7 +150,9 @@ const PaymentsPage: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Payments</h1>
           <p className="text-gray-600">
-            {canManage ? 'Track and manage all payment transactions' : 'View your payment history'}
+            {canManage
+              ? "Track and manage all payment transactions"
+              : "View your payment history"}
           </p>
         </div>
         <div className="flex space-x-3">
@@ -153,6 +192,13 @@ const PaymentsPage: React.FC = () => {
             </div>
           </div>
           <div className="flex gap-2">
+            <div className="border rounded-lg px-2 flex items-center space-x-2">
+              <FilterIcon
+                color="gray"
+                className="my-2 cursor-pointer"
+                onClick={() => setShowFilterOptions(true)}
+              />
+            </div>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -163,6 +209,7 @@ const PaymentsPage: React.FC = () => {
               <option value="pending">Pending</option>
               <option value="failed">Failed</option>
               <option value="cancelled">Cancelled</option>
+              <option value="overdue">Overdue</option>
             </select>
           </div>
         </div>
@@ -230,7 +277,8 @@ const PaymentsPage: React.FC = () => {
                             {payment.investment.investmentId}
                           </div>
                           <div className="text-sm text-gray-500">
-                            Principal: {formatCurrency(payment.investment.principalAmount)}
+                            Principal:{" "}
+                            {formatCurrency(payment.investment.principalAmount)}
                           </div>
                         </div>
                       </td>
@@ -286,6 +334,20 @@ const PaymentsPage: React.FC = () => {
                               <Download className="h-4 w-4" />
                             </button>
                           )}
+                          {(payment?.status === "overdue" ||
+                            payment?.status === "completed") &&
+                            user?.role != "investor" && (
+                              <span title="Record Payment">
+                                <CreditCard
+                                  onClick={() => {
+                                    setPaymentSchedule(payment);
+                                    setShowPaymentSchedule(true);
+                                    console.log(payment, "payment");
+                                  }}
+                                  className="h-5 w-5 text-green-600 cursor-pointer ml-2"
+                                />
+                              </span>
+                            )}
                         </div>
                       </td>
                     </tr>
@@ -340,6 +402,34 @@ const PaymentsPage: React.FC = () => {
           />
         </Modal>
       )}
+
+      <Modal
+        isOpen={showFliterOptions}
+        onClose={() => setShowFilterOptions(false)}
+        title={`Add filters`}
+        size="xl"
+      >
+        <PaymentsFilter
+          onFilterChange={handleFilterChange}
+          onCancel={() => setShowFilterOptions(false)}
+        />
+      </Modal>
+
+      {/* Remarks Creation Modal */}
+      <Modal
+        isOpen={showPaymentSchedule}
+        onClose={() => setShowPaymentSchedule(false)}
+        title={`Record payment for ${paymentSchedule?.investment?.investmentId}`}
+        size="xl"
+      >
+        <PaymentRecordForm
+          investmentId={paymentSchedule?.investment?.investmentId}
+          investment={paymentSchedule?.investment}
+          paymentSchedule={paymentSchedule}
+          onSubmit={handleRecordSubmit}
+          onCancel={() => setShowPaymentSchedule(false)}
+        />
+      </Modal>
     </div>
   );
 };

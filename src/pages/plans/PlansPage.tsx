@@ -1,29 +1,42 @@
 // src/pages/plans/PlansPage.tsx - Updated with new Plan structure
-import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, Calculator, Eye, Copy, CheckCircle, AlertTriangle } from 'lucide-react';
-import { motion } from 'framer-motion';
-import Button from '../../components/common/Button';
-import Modal from '../../components/common/Modal';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { plansService } from '../../services/plans';
-import { Plan } from '../../types';
-import toast from 'react-hot-toast';
-import PlanForm from './PlanForm';
-import PlanCalculator from './PlanCalculator';
+import React, { useState, useEffect } from "react";
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Calculator,
+  Eye,
+  Copy,
+  CheckCircle,
+  AlertTriangle,
+  FilterIcon,
+} from "lucide-react";
+import { motion } from "framer-motion";
+import Button from "../../components/common/Button";
+import Modal from "../../components/common/Modal";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import { plansService } from "../../services/plans";
+import { Plan } from "../../types";
+import toast from "react-hot-toast";
+import PlanForm from "./PlanForm";
+import PlanCalculator from "./PlanCalculator";
+import PlanFilter, { PlanFilterValues } from "./PlanFilter";
 
 const PlansPage: React.FC = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [paymentTypeFilter, setPaymentTypeFilter] = useState('');
-  const [interestTypeFilter, setInterestTypeFilter] = useState('');
-  const [activeFilter, setActiveFilter] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [paymentTypeFilter, setPaymentTypeFilter] = useState("");
+  const [interestTypeFilter, setInterestTypeFilter] = useState("");
+  const [activeFilter, setActiveFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCalculatorModal, setShowCalculatorModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+  const [showFliterOptions, setShowFilterOptions] = useState(false);
 
   const fetchPlans = async () => {
     try {
@@ -34,15 +47,15 @@ const PlansPage: React.FC = () => {
         search: searchTerm,
         paymentType: paymentTypeFilter,
         interestType: interestTypeFilter,
-        isActive: activeFilter
+        isActive: activeFilter,
       });
-      
+
       setPlans(response.data || []);
       if (response.pagination) {
         setTotalPages(response.pagination.pages);
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to fetch plans');
+      toast.error(error.response?.data?.message || "Failed to fetch plans");
     } finally {
       setLoading(false);
     }
@@ -50,42 +63,53 @@ const PlansPage: React.FC = () => {
 
   useEffect(() => {
     fetchPlans();
-  }, [currentPage, searchTerm, paymentTypeFilter, interestTypeFilter, activeFilter]);
+  }, [
+    currentPage,
+    searchTerm,
+    paymentTypeFilter,
+    interestTypeFilter,
+    activeFilter,
+  ]);
 
   const handleCreatePlan = async (data: any) => {
     try {
       await plansService.createPlan(data);
-      toast.success('Plan created successfully');
+      toast.success("Plan created successfully");
       setShowCreateModal(false);
       fetchPlans();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create plan');
+      toast.error(error.response?.data?.message || "Failed to create plan");
     }
+  };
+
+  const handleFilterChange = (filters: PlanFilterValues) => {
+    console.log("Apply filters:", filters);
+    // Apply filtering logic here for your investor list
   };
 
   const handleEditPlan = async (data: any) => {
     if (!selectedPlan) return;
-    
+
     try {
       await plansService.updatePlan(selectedPlan._id, data);
-      toast.success('Plan updated successfully');
+      toast.success("Plan updated successfully");
       setShowEditModal(false);
       setSelectedPlan(null);
       fetchPlans();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to update plan');
+      toast.error(error.response?.data?.message || "Failed to update plan");
     }
   };
 
   const handleDeletePlan = async (plan: Plan) => {
     if (!confirm(`Are you sure you want to delete ${plan.name}?`)) return;
-    
+
     try {
       await plansService.deletePlan(plan._id);
-      toast.success('Plan deleted successfully');
+      toast.success("Plan deleted successfully");
       fetchPlans();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to delete plan');
+      toast.error(error.response?.data?.message || "Failed to delete plan");
     }
   };
 
@@ -93,38 +117,44 @@ const PlansPage: React.FC = () => {
     try {
       await plansService.copyPlan(plan._id, {
         name: `${plan.name} (Copy)`,
-        description: `Copy of ${plan.name}`
+        description: `Copy of ${plan.name}`,
       });
-      toast.success('Plan copied successfully');
+      toast.success("Plan copied successfully");
       fetchPlans();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to copy plan');
+      toast.error(error.response?.data?.message || "Failed to copy plan");
     }
   };
 
   const getStatusBadge = (isActive: boolean) => {
     return (
-      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-        isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-      }`}>
-        {isActive ? 'Active' : 'Inactive'}
+      <span
+        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+          isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+        }`}
+      >
+        {isActive ? "Active" : "Inactive"}
       </span>
     );
   };
 
   const getPaymentTypeBadge = (paymentType: string) => {
     const classes = {
-      interest: 'bg-blue-100 text-blue-800',
-      interestWithPrincipal: 'bg-purple-100 text-purple-800'
+      interest: "bg-blue-100 text-blue-800",
+      interestWithPrincipal: "bg-purple-100 text-purple-800",
     };
-    
+
     const labels = {
-      interest: 'Interest Only',
-      interestWithPrincipal: 'Interest + Principal'
+      interest: "Interest Only",
+      interestWithPrincipal: "Interest + Principal",
     };
-    
+
     return (
-      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${classes[paymentType as keyof typeof classes]}`}>
+      <span
+        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+          classes[paymentType as keyof typeof classes]
+        }`}
+      >
         {labels[paymentType as keyof typeof labels]}
       </span>
     );
@@ -132,46 +162,66 @@ const PlansPage: React.FC = () => {
 
   const getRiskBadge = (riskLevel: string) => {
     const classes = {
-      low: 'bg-green-100 text-green-800',
-      medium: 'bg-yellow-100 text-yellow-800',
-      high: 'bg-red-100 text-red-800'
+      low: "bg-green-100 text-green-800",
+      medium: "bg-yellow-100 text-yellow-800",
+      high: "bg-red-100 text-red-800",
     };
-    
+
     return (
-      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${classes[riskLevel as keyof typeof classes]}`}>
+      <span
+        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+          classes[riskLevel as keyof typeof classes]
+        }`}
+      >
         {riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1)}
       </span>
     );
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
       minimumFractionDigits: 0,
     }).format(amount);
   };
 
   const getPaymentFrequency = (plan: Plan) => {
-    if (plan.paymentType === 'interest' && plan.interestPayment) {
+    if (plan.paymentType === "interest" && plan.interestPayment) {
       return plan.interestPayment.interestFrequency;
-    } else if (plan.paymentType === 'interestWithPrincipal' && plan.interestWithPrincipalPayment) {
+    } else if (
+      plan.paymentType === "interestWithPrincipal" &&
+      plan.interestWithPrincipalPayment
+    ) {
       return plan.interestWithPrincipalPayment.paymentFrequency;
     }
-    return 'Not configured';
+    return "Not configured";
   };
 
   const getValidationStatus = (plan: Plan) => {
     // Basic validation - check if required configurations are present
-    const hasBasicConfig = plan.interestRate && plan.tenure && plan.minInvestment && plan.maxInvestment;
-    
+    const hasBasicConfig =
+      plan.interestRate &&
+      plan.tenure &&
+      plan.minInvestment &&
+      plan.maxInvestment;
+
     let hasPaymentConfig = false;
-    if (plan.paymentType === 'interest' && plan.interestPayment) {
-      hasPaymentConfig = !!(plan.interestPayment.interestFrequency && plan.interestPayment.principalRepaymentOption);
-    } else if (plan.paymentType === 'interestWithPrincipal' && plan.interestWithPrincipalPayment) {
-      hasPaymentConfig = !!(plan.interestWithPrincipalPayment.paymentFrequency && plan.interestWithPrincipalPayment.principalRepaymentPercentage);
+    if (plan.paymentType === "interest" && plan.interestPayment) {
+      hasPaymentConfig = !!(
+        plan.interestPayment.interestFrequency &&
+        plan.interestPayment.principalRepaymentOption
+      );
+    } else if (
+      plan.paymentType === "interestWithPrincipal" &&
+      plan.interestWithPrincipalPayment
+    ) {
+      hasPaymentConfig = !!(
+        plan.interestWithPrincipalPayment.paymentFrequency &&
+        plan.interestWithPrincipalPayment.principalRepaymentPercentage
+      );
     }
-    
+
     return hasBasicConfig && hasPaymentConfig;
   };
 
@@ -185,7 +235,10 @@ const PlansPage: React.FC = () => {
       >
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Investment Plans</h1>
-          <p className="text-gray-600">Configure and manage investment plans with different payment structures</p>
+          <p className="text-gray-600">
+            Configure and manage investment plans with different payment
+            structures
+          </p>
         </div>
         <Button onClick={() => setShowCreateModal(true)}>
           <Plus className="h-4 w-4 mr-2" />
@@ -214,6 +267,13 @@ const PlansPage: React.FC = () => {
             </div>
           </div>
           <div className="flex gap-2">
+            <div className="border rounded-lg px-2 flex items-center space-x-2">
+              <FilterIcon
+                color="gray"
+                className="my-2 cursor-pointer"
+                onClick={() => setShowFilterOptions(true)}
+              />
+            </div>
             <select
               value={paymentTypeFilter}
               onChange={(e) => setPaymentTypeFilter(e.target.value)}
@@ -221,7 +281,9 @@ const PlansPage: React.FC = () => {
             >
               <option value="">All Payment Types</option>
               <option value="interest">Interest Only</option>
-              <option value="interestWithPrincipal">Interest + Principal</option>
+              <option value="interestWithPrincipal">
+                Interest + Principal
+              </option>
             </select>
             <select
               value={interestTypeFilter}
@@ -315,7 +377,8 @@ const PlansPage: React.FC = () => {
                             {plan.tenure} months
                           </div>
                           <div className="text-sm text-gray-500">
-                            {formatCurrency(plan.minInvestment)} - {formatCurrency(plan.maxInvestment)}
+                            {formatCurrency(plan.minInvestment)} -{" "}
+                            {formatCurrency(plan.maxInvestment)}
                           </div>
                           <div className="flex items-center space-x-1 mt-1">
                             {getRiskBadge(plan.riskLevel)}
@@ -342,7 +405,9 @@ const PlansPage: React.FC = () => {
                               <AlertTriangle className="h-4 w-4 text-yellow-500" />
                             )}
                             <span className="text-xs text-gray-500">
-                              {getValidationStatus(plan) ? 'Valid' : 'Incomplete'}
+                              {getValidationStatus(plan)
+                                ? "Valid"
+                                : "Incomplete"}
                             </span>
                           </div>
                         </div>
@@ -477,6 +542,18 @@ const PlansPage: React.FC = () => {
             }}
           />
         )}
+      </Modal>
+
+      <Modal
+        isOpen={showFliterOptions}
+        onClose={() => setShowFilterOptions(false)}
+        title={`Add filters`}
+        size="xl"
+      >
+        <PlanFilter
+          onFilterChange={handleFilterChange}
+          onCancel={() => setShowFilterOptions(false)}
+        />
       </Modal>
     </div>
   );
