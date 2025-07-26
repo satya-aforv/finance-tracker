@@ -1,7 +1,15 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Menu, Bell, Search, ChevronDown, LogOut, User, Settings } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from "react";
+import {
+  Menu,
+  Bell,
+  Search,
+  ChevronDown,
+  LogOut,
+  User,
+  Settings,
+} from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -15,20 +23,23 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   // Close user menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(event.target as Node)
+      ) {
         setShowUserMenu(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -42,10 +53,10 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
           >
             <Menu className="h-6 w-6" />
           </button>
-          
+
           <div className="ml-4 lg:ml-0">
             <h1 className="text-2xl font-semibold text-gray-900">
-              Welcome back, {user?.name?.split(' ')[0]}!
+              Welcome back, {user?.name?.split(" ")[0]}!
             </h1>
             <p className="text-sm text-gray-500">
               Manage your investments and track your portfolio performance
@@ -82,8 +93,12 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
                 </span>
               </div>
               <div className="hidden md:block text-left">
-                <div className="text-sm font-medium text-gray-900">{user?.name}</div>
-                <div className="text-xs text-gray-500 capitalize">{user?.role?.replace('_', ' ')}</div>
+                <div className="text-sm font-medium text-gray-900">
+                  {user?.name}
+                </div>
+                <div className="text-xs text-gray-500 capitalize">
+                  {user?.role?.replace("_", " ")}
+                </div>
               </div>
               <ChevronDown className="h-4 w-4 text-gray-400" />
             </button>
@@ -92,13 +107,21 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
             {showUserMenu && (
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                 <div className="px-4 py-2 border-b border-gray-200">
-                  <div className="text-sm font-medium text-gray-900">{user?.name}</div>
+                  <div className="text-sm font-medium text-gray-900">
+                    {user?.name}
+                  </div>
                   <div className="text-xs text-gray-500">{user?.email}</div>
                 </div>
-                
+
                 <button
                   onClick={() => {
-                    navigate('/settings');
+                    if (user?.role === "investor") {
+                      navigate("/profile");
+                    } else if (user?.role === "finance_manager") {
+                      navigate("/profile");
+                    } else if (user?.role === "admin") {
+                      navigate("/settings");
+                    }
                     setShowUserMenu(false);
                   }}
                   className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
@@ -106,11 +129,11 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
                   <User className="h-4 w-4 mr-2" />
                   Profile
                 </button>
-                
-                {user?.role === 'admin' && (
+
+                {user?.role === "admin" && (
                   <button
                     onClick={() => {
-                      navigate('/settings');
+                      navigate("/settings");
                       setShowUserMenu(false);
                     }}
                     className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
@@ -119,9 +142,9 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
                     Settings
                   </button>
                 )}
-                
+
                 <div className="border-t border-gray-200 my-1"></div>
-                
+
                 <button
                   onClick={handleLogout}
                   className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"

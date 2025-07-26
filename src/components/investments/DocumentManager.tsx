@@ -1,16 +1,23 @@
 // src/components/investments/DocumentManager.tsx
-import React, { useState, useEffect } from 'react';
-import { Upload, FileText, Download, Trash2, Eye, Plus, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import Button from '../common/Button';
-import Modal from '../common/Modal';
-import LoadingSpinner from '../common/LoadingSpinner';
-import { investmentsService } from '../../services/investments';
-import toast from 'react-hot-toast';
+import React, { useState, useEffect } from "react";
+import { Upload, FileText, Download, Trash2, Eye, Plus, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import Button from "../common/Button";
+import Modal from "../common/Modal";
+import LoadingSpinner from "../common/LoadingSpinner";
+import { investmentsService } from "../../services/investments";
+import toast from "react-hot-toast";
 
 interface Document {
   _id: string;
-  category: 'agreement' | 'kyc' | 'payment_proof' | 'communication' | 'legal' | 'other';
+  category:
+    | "agreement"
+    | "kyc"
+    | "payment_proof"
+    | "communication"
+    | "legal"
+    | "other";
+  otherCategoryName?: string;
   fileName: string;
   originalName: string;
   filePath: string;
@@ -31,43 +38,45 @@ interface DocumentManagerProps {
   isEditable?: boolean;
 }
 
-const DocumentManager: React.FC<DocumentManagerProps> = ({ 
-  investmentId, 
-  isEditable = false 
+const DocumentManager: React.FC<DocumentManagerProps> = ({
+  investmentId,
+  isEditable = false,
 }) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [documentStats, setDocumentStats] = useState<any>({});
 
   const [uploadForm, setUploadForm] = useState({
-    category: 'agreement' as Document['category'],
-    description: '',
-    files: [] as File[]
+    category: "agreement" as Document["category"],
+    otherCategoryName: "",
+    description: "",
+    files: [] as File[],
   });
 
   const categories = [
-    { value: 'all', label: 'All Documents', color: 'gray' },
-    { value: 'agreement', label: 'Agreements', color: 'blue' },
-    { value: 'kyc', label: 'KYC Documents', color: 'green' },
-    { value: 'payment_proof', label: 'Payment Proofs', color: 'purple' },
-    { value: 'communication', label: 'Communications', color: 'yellow' },
-    { value: 'legal', label: 'Legal Documents', color: 'red' },
-    { value: 'other', label: 'Other', color: 'gray' }
+    { value: "all", label: "All Documents", color: "gray" },
+    { value: "agreement", label: "Agreements", color: "blue" },
+    { value: "kyc", label: "KYC Documents", color: "green" },
+    { value: "payment_proof", label: "Payment Proofs", color: "purple" },
+    { value: "communication", label: "Communications", color: "yellow" },
+    { value: "legal", label: "Legal Documents", color: "red" },
+    { value: "other", label: "Other", color: "gray" },
   ];
 
   const fetchDocuments = async () => {
     try {
       setLoading(true);
-      const response = await investmentsService.getDocuments(investmentId, 
-        selectedCategory !== 'all' ? { category: selectedCategory } : {}
+      const response = await investmentsService.getDocuments(
+        investmentId,
+        selectedCategory !== "all" ? { category: selectedCategory } : {}
       );
       setDocuments(response.data.documents || []);
       setDocumentStats(response.data.documentsByCategory || {});
     } catch (error: any) {
-      toast.error('Failed to fetch documents');
+      toast.error("Failed to fetch documents");
     } finally {
       setLoading(false);
     }
@@ -79,37 +88,37 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
-    setUploadForm(prev => ({ ...prev, files }));
+    setUploadForm((prev) => ({ ...prev, files }));
   };
 
   const handleUpload = async () => {
     if (uploadForm.files.length === 0) {
-      toast.error('Please select files to upload');
+      toast.error("Please select files to upload");
       return;
     }
 
     if (!uploadForm.category) {
-      toast.error('Please select a document category');
+      toast.error("Please select a document category");
       return;
     }
 
     try {
       setUploading(true);
-      await investmentsService.uploadDocuments(
-        investmentId, 
-        uploadForm.files,
-        {
-          category: uploadForm.category,
-          description: uploadForm.description
-        }
+      await investmentsService.uploadDocuments(investmentId, uploadForm.files, {
+        category: uploadForm.category,
+        description: uploadForm.description,
+      });
+
+      toast.success(
+        `${uploadForm.files.length} document(s) uploaded successfully`
       );
-      
-      toast.success(`${uploadForm.files.length} document(s) uploaded successfully`);
       setShowUploadModal(false);
-      setUploadForm({ category: 'agreement', description: '', files: [] });
+      setUploadForm({ category: "agreement", description: "", files: [] });
       fetchDocuments();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to upload documents');
+      toast.error(
+        error.response?.data?.message || "Failed to upload documents"
+      );
     } finally {
       setUploading(false);
     }
@@ -120,63 +129,66 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
 
     try {
       await investmentsService.deleteDocument(investmentId, documentId);
-      toast.success('Document deleted successfully');
+      toast.success("Document deleted successfully");
       fetchDocuments();
     } catch (error: any) {
-      toast.error('Failed to delete document');
+      toast.error("Failed to delete document");
     }
   };
 
   const handleDownload = (document: Document) => {
     // In a real implementation, this would handle file download
-    const link = document.createElement('a');
-    link.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/${document.filePath}`;
+    const link = document.createElement("a");
+    link.href = `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/${
+      document.filePath
+    }`;
     link.download = document.originalName;
     link.click();
   };
 
   const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(date).toLocaleDateString("en-IN", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const getCategoryColor = (category: string) => {
-    const categoryData = categories.find(c => c.value === category);
-    return categoryData?.color || 'gray';
+    const categoryData = categories.find((c) => c.value === category);
+    return categoryData?.color || "gray";
   };
 
   const getCategoryBadge = (category: string) => {
     const colors = {
-      agreement: 'bg-blue-100 text-blue-800',
-      kyc: 'bg-green-100 text-green-800',
-      payment_proof: 'bg-purple-100 text-purple-800',
-      communication: 'bg-yellow-100 text-yellow-800',
-      legal: 'bg-red-100 text-red-800',
-      other: 'bg-gray-100 text-gray-800'
+      agreement: "bg-blue-100 text-blue-800",
+      kyc: "bg-green-100 text-green-800",
+      payment_proof: "bg-purple-100 text-purple-800",
+      communication: "bg-yellow-100 text-yellow-800",
+      legal: "bg-red-100 text-red-800",
+      other: "bg-gray-100 text-gray-800",
     };
-    
+
     return colors[category as keyof typeof colors] || colors.other;
   };
 
   const getFileIcon = (mimeType: string) => {
-    if (mimeType.includes('pdf')) return '📄';
-    if (mimeType.includes('image')) return '🖼️';
-    if (mimeType.includes('word') || mimeType.includes('document')) return '📝';
-    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return '📊';
-    return '📎';
+    if (mimeType.includes("pdf")) return "📄";
+    if (mimeType.includes("image")) return "🖼️";
+    if (mimeType.includes("word") || mimeType.includes("document")) return "📝";
+    if (mimeType.includes("excel") || mimeType.includes("spreadsheet"))
+      return "📊";
+    return "📎";
   };
 
   if (loading) {
@@ -192,7 +204,9 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="text-lg font-medium text-gray-900">Document Management</h3>
+          <h3 className="text-lg font-medium text-gray-900">
+            Document Management
+          </h3>
           <p className="text-sm text-gray-500">
             Manage documents related to this investment
           </p>
@@ -207,16 +221,20 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
 
       {/* Document Statistics */}
       <div className="bg-gray-50 p-4 rounded-lg">
-        <h4 className="text-sm font-medium text-gray-900 mb-3">Document Overview</h4>
+        <h4 className="text-sm font-medium text-gray-900 mb-3">
+          Document Overview
+        </h4>
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-          {categories.filter(c => c.value !== 'all').map((category) => (
-            <div key={category.value} className="text-center">
-              <div className="text-lg font-bold text-gray-900">
-                {documentStats[category.value] || 0}
+          {categories
+            .filter((c) => c.value !== "all")
+            .map((category) => (
+              <div key={category.value} className="text-center">
+                <div className="text-lg font-bold text-gray-900">
+                  {documentStats[category.value] || 0}
+                </div>
+                <div className="text-xs text-gray-500">{category.label}</div>
               </div>
-              <div className="text-xs text-gray-500">{category.label}</div>
-            </div>
-          ))}
+            ))}
         </div>
       </div>
 
@@ -228,12 +246,12 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
             onClick={() => setSelectedCategory(category.value)}
             className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
               selectedCategory === category.value
-                ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? "bg-blue-100 text-blue-800 border border-blue-200"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
             {category.label}
-            {category.value !== 'all' && documentStats[category.value] > 0 && (
+            {category.value !== "all" && documentStats[category.value] > 0 && (
               <span className="ml-1 bg-white px-1 rounded-full text-xs">
                 {documentStats[category.value]}
               </span>
@@ -283,8 +301,16 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
                         <h4 className="text-sm font-medium text-gray-900 truncate">
                           {document.originalName}
                         </h4>
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCategoryBadge(document.category)}`}>
-                          {categories.find(c => c.value === document.category)?.label}
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCategoryBadge(
+                            document.category
+                          )}`}
+                        >
+                          {
+                            categories.find(
+                              (c) => c.value === document.category
+                            )?.label
+                          }
                         </span>
                       </div>
                       <div className="flex items-center space-x-4 mt-1 text-xs text-gray-500">
@@ -318,7 +344,12 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
                     </button>
                     {isEditable && (
                       <button
-                        onClick={() => handleDeleteDocument(document._id, document.originalName)}
+                        onClick={() =>
+                          handleDeleteDocument(
+                            document._id,
+                            document.originalName
+                          )
+                        }
                         className="p-2 text-gray-400 hover:text-red-600 transition-colors"
                         title="Delete"
                       >
@@ -338,7 +369,7 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
         isOpen={showUploadModal}
         onClose={() => {
           setShowUploadModal(false);
-          setUploadForm({ category: 'agreement', description: '', files: [] });
+          setUploadForm({ category: "agreement", description: "", files: [] });
         }}
         title="Upload Documents"
         size="md"
@@ -350,19 +381,46 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
             </label>
             <select
               value={uploadForm.category}
-              onChange={(e) => setUploadForm(prev => ({ 
-                ...prev, 
-                category: e.target.value as Document['category'] 
-              }))}
+              onChange={(e) =>
+                setUploadForm((prev) => ({
+                  ...prev,
+                  category: e.target.value as Document["category"],
+                }))
+              }
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              {categories.filter(c => c.value !== 'all').map((category) => (
-                <option key={category.value} value={category.value}>
-                  {category.label}
-                </option>
-              ))}
+              {categories
+                .filter((c) => c.value !== "all")
+                .map((category) => (
+                  <option key={category.value} value={category.value}>
+                    {category.label}
+                  </option>
+                ))}
             </select>
           </div>
+
+          {uploadForm.category === "other" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Please specify the category
+              </label>
+              <input
+                type="text"
+                value={
+                  uploadForm.category === "other" ? uploadForm.description : ""
+                }
+                onChange={(e) =>
+                  setUploadForm((prev) => ({
+                    ...prev,
+                    otherCategoryName: e.target.value,
+                  }))
+                }
+                disabled={uploadForm.category !== "other"}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g 'Financial Statements'"
+              />
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -370,10 +428,12 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
             </label>
             <textarea
               value={uploadForm.description}
-              onChange={(e) => setUploadForm(prev => ({ 
-                ...prev, 
-                description: e.target.value 
-              }))}
+              onChange={(e) =>
+                setUploadForm((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
+              }
               rows={3}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter document description..."
@@ -410,15 +470,24 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
                   Selected Files ({uploadForm.files.length}):
                 </p>
                 {uploadForm.files.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded">
-                    <span className="text-sm text-gray-700 truncate">{file.name}</span>
+                  <div
+                    key={index}
+                    className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded"
+                  >
+                    <span className="text-sm text-gray-700 truncate">
+                      {file.name}
+                    </span>
                     <div className="flex items-center space-x-2">
-                      <span className="text-xs text-gray-500">{formatFileSize(file.size)}</span>
+                      <span className="text-xs text-gray-500">
+                        {formatFileSize(file.size)}
+                      </span>
                       <button
-                        onClick={() => setUploadForm(prev => ({
-                          ...prev,
-                          files: prev.files.filter((_, i) => i !== index)
-                        }))}
+                        onClick={() =>
+                          setUploadForm((prev) => ({
+                            ...prev,
+                            files: prev.files.filter((_, i) => i !== index),
+                          }))
+                        }
                         className="text-red-500 hover:text-red-700"
                       >
                         <X className="h-4 w-4" />
@@ -435,7 +504,11 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
               variant="outline"
               onClick={() => {
                 setShowUploadModal(false);
-                setUploadForm({ category: 'agreement', description: '', files: [] });
+                setUploadForm({
+                  category: "agreement",
+                  description: "",
+                  files: [],
+                });
               }}
             >
               Cancel
@@ -445,7 +518,8 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
               loading={uploading}
               disabled={uploadForm.files.length === 0}
             >
-              Upload {uploadForm.files.length > 0 && `(${uploadForm.files.length})`}
+              Upload{" "}
+              {uploadForm.files.length > 0 && `(${uploadForm.files.length})`}
             </Button>
           </div>
         </div>

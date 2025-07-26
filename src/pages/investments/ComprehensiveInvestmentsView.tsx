@@ -22,6 +22,9 @@ import {
   Trash2,
   Info,
   Clock,
+  MessageCircleOffIcon,
+  MessageCircle,
+  MessageCircleCode,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm, useWatch } from "react-hook-form";
@@ -32,6 +35,26 @@ import toast from "react-hot-toast";
 import InvestmentTimeline from "../../components/investments/InvestmentTimeline";
 import { useAuth } from "../../contexts/AuthContext";
 import DocumentManager from "../../components/investments/DocumentManager";
+
+const commentData = [
+  {
+    author: "Anjali Mehra",
+    text: "Investment review completed. Proceed to next stage.",
+    date: "2025-07-25T12:30:00Z",
+    replies: [
+      {
+        author: "Anjali Mehra",
+        text: "Acknowledged. Proceeding ahead.",
+        date: "2025-07-24T14:30:00Z",
+      },
+    ],
+  },
+  {
+    author: "Ravi Kumar",
+    text: "Missing KYC document uploaded.",
+    date: "2025-07-23T10:15:00Z",
+  },
+];
 
 const Button = ({
   children,
@@ -155,7 +178,8 @@ const ComprehensiveInvestmentsView = ({
     status: investment.status,
     notes: investment.notes || "",
   });
-
+  const [showRemarksForm, setShowRemarksForm] = useState(false);
+  const [paymentSchedule, setPaymentSchedule] = useState(null);
   // Fetch investor data
   useEffect(() => {
     console.log(investmentsData, "investmentsData");
@@ -278,6 +302,21 @@ const ComprehensiveInvestmentsView = ({
     }
   };
 
+  const handleRemarksSubmit = async (data) => {
+    try {
+      await investmentsService.addRemarks(investmentId, data.remarks);
+      toast.success("Remarks added successfully");
+      setShowRemarksForm(false);
+
+      // Refresh investment data
+      const response = await investmentsService.getInvestment(investmentId);
+      setInvestment(response.data || []);
+    } catch (error) {
+      console.error("Error adding remarks:", error);
+      toast.error(error.response?.data?.message || "Failed to add remarks");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -312,10 +351,28 @@ const ComprehensiveInvestmentsView = ({
   };
 
   const getProgressPercentage = () => {
+    console.log(investment, "investment");
     if (investment.totalExpectedReturns === 0) return 0;
     return Math.round(
       (investment.totalPaidAmount / investment.totalExpectedReturns) * 100
     );
+  };
+
+  const getProgressCounts = () => {
+    // Check if investment data exists
+    if (!investment?.schedule?.length) return 0;
+
+    // Count completed schedules (paid or partial_paid)
+    const completedCount = investment.schedule.filter(
+      (s) => s.status === "paid" || s.status === "partial_paid"
+    ).length;
+
+    const totalSchedules = investment.schedule.length;
+
+    // Calculate progress percentage (completed/total)
+    const progressPercentage = (completedCount / totalSchedules) * 100;
+
+    return Math.round(progressPercentage);
   };
 
   return (
@@ -360,77 +417,83 @@ const ComprehensiveInvestmentsView = ({
       </div>
 
       {/* Enhanced Header with Edit Functionality */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 rounded-xl text-white shadow-lg mt-4"
-      >
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <div className="flex items-center space-x-4">
-              <h2 className="text-3xl font-bold">{investment?.investmentId}</h2>
-              {getStatusBadge(investment?.status)}
-            </div>
-            <p className="text-blue-100 mt-2">
-              Investment created on {formatDate(investment.createdAt)}
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 text-sm">
-              <div>
-                <span className="text-blue-200">Investor:</span>
-                <div className="font-medium">{investment?.investor?.name}</div>
-              </div>
-              <div>
-                <span className="text-blue-200">Plan:</span>
-                <div className="font-medium">{investment?.plan?.name}</div>
-              </div>
-              <div>
-                <span className="text-blue-200">Progress:</span>
-                <div className="font-medium">
-                  {getProgressPercentage()}% Complete
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        {/* Quick Stats Cards */}
+        <div className="grid grid-cols-1">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 rounded-xl text-white shadow-lg mt-4"
+          >
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <div className="flex items-center space-x-4">
+                  <h2 className="text-3xl font-bold">
+                    {investment?.investmentId}
+                  </h2>
+                  {getStatusBadge(investment?.status)}
+                </div>
+                <p className="text-blue-100 mt-2">
+                  Investment created on {formatDate(investment.createdAt)}
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 text-sm">
+                  <div>
+                    <span className="text-blue-200">Investor:</span>
+                    <div className="font-medium">
+                      {investment?.investor?.name}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-blue-200">Plan:</span>
+                    <div className="font-medium">{investment?.plan?.name}</div>
+                  </div>
+                  <div>
+                    <span className="text-blue-200">Progress:</span>
+                    <div className="font-medium">
+                      {getProgressPercentage()}% Complete
+                    </div>
+                  </div>
                 </div>
               </div>
+
+              <div className="flex items-center space-x-3">
+                {canManage && !isEditing && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditing(true)}
+                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                )}
+                {isEditing && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSaveEdit}
+                      className="bg-green-600 border-green-600 text-white hover:bg-green-700"
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      Save
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCancelEdit}
+                      className="bg-red-600 border-red-600 text-white hover:bg-red-700"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Cancel
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            {canManage && !isEditing && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditing(true)}
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
-            )}
-            {isEditing && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSaveEdit}
-                  className="bg-green-600 border-green-600 text-white hover:bg-green-700"
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  Save
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCancelEdit}
-                  className="bg-red-600 border-red-600 text-white hover:bg-red-700"
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  Cancel
-                </Button>
-              </>
-            )}
-          </div>
+          </motion.div>
         </div>
-      </motion.div>
-
-      <div className="max-w-7xl mt-4">
         {/* Quick Stats Cards */}
         {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <motion.div
@@ -518,12 +581,7 @@ const ComprehensiveInvestmentsView = ({
         </div> */}
 
         {/* Enhanced Tab Navigation */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white rounded-lg shadow-sm border border-gray-200"
-        >
+        <div className="bg-white rounded-lg shadow-sm border mt-6">
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-8 px-6">
               {[
@@ -531,20 +589,27 @@ const ComprehensiveInvestmentsView = ({
                 { id: "schedule", label: "Payment Schedule", icon: Calendar },
                 { id: "documents", label: "Documents", icon: FileText },
                 { id: "timeline", label: "Activity Timeline", icon: Clock },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
-                    activeTab === tab.id
-                      ? "border-blue-500 text-blue-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
-                >
-                  <tab.icon className="h-4 w-4" />
-                  <span>{tab.label}</span>
-                </button>
-              ))}
+                { id: "referal", label: "Referal Details", icon: Clock },
+              ].map((tab) => {
+                if (user?.role !== "admin" && tab.id === "referal") {
+                  return null;
+                } else {
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                        activeTab === tab.id
+                          ? "border-blue-500 text-blue-600"
+                          : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                      }`}
+                    >
+                      <tab.icon className="h-4 w-4" />
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                }
+              })}
             </nav>
           </div>
 
@@ -632,7 +697,14 @@ const ComprehensiveInvestmentsView = ({
                     </h3>
                     <div className="text-right">
                       <span className="text-2xl font-bold text-blue-600">
-                        {getProgressPercentage()}%
+                        {investment?.schedule &&
+                          investment?.schedule?.length > 0 &&
+                          investment?.schedule
+                            .map(
+                              (s) =>
+                                s.status == "paid" || s.status == "partial_paid"
+                            )
+                            .filter(Boolean).length}
                       </span>
                       <p className="text-xs text-gray-500">Completed</p>
                     </div>
@@ -640,14 +712,28 @@ const ComprehensiveInvestmentsView = ({
                   <div className="w-full bg-gray-200 rounded-full h-4">
                     <div
                       className="bg-gradient-to-r from-blue-500 to-blue-600 h-4 rounded-full transition-all duration-500 ease-out"
-                      style={{ width: `${getProgressPercentage()}%` }}
+                      style={{ width: `${getProgressCounts()}%` }}
                     ></div>
                   </div>
                   <div className="flex justify-between text-xs text-gray-500 mt-2">
                     <span>
-                      Started: {formatDate(investment.investmentDate)}
+                      Started: {formatDate(investment.investmentDate)} <br />
+                      Total Installments: {investment?.schedule?.length || 0}
                     </span>
-                    <span>Maturity: {formatDate(investment.maturityDate)}</span>
+                    <span>
+                      Pending Installments:{" "}
+                      {investment?.schedule
+                        ? investment?.schedule?.length -
+                          investment?.schedule
+                            .map(
+                              (s) =>
+                                s.status == "paid" || s.status == "partial_paid"
+                            )
+                            .filter(Boolean).length
+                        : 0}{" "}
+                      <br />
+                      Maturity: {formatDate(investment.maturityDate)}
+                    </span>
                   </div>
                 </div>
 
@@ -749,6 +835,35 @@ const ComprehensiveInvestmentsView = ({
                     </div>
                   </div>
                 </div>
+
+                {/* Referal Details */}
+                {!canManage && (
+                  <div className="bg-white p-6 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Referal Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="text-center p-4 bg-gray-50 rounded-lg">
+                        <p className="text-gray-600 text-sm">Referrer Name</p>
+                        <p className="font-semibold text-lg">
+                          {investor?.referralCode || "N/A"}
+                        </p>
+                      </div>
+                      <div className="text-center p-4 bg-gray-50 rounded-lg">
+                        <p className="text-gray-600 text-sm">Referrer Email</p>
+                        <p className="font-semibold text-lg text-blue-600">
+                          {investor?.referredBy?.name || "N/A"}
+                        </p>
+                      </div>
+                      <div className="text-center p-4 bg-gray-50 rounded-lg">
+                        <p className="text-gray-600 text-sm">Referrer Mobile</p>
+                        <p className="font-semibold text-lg capitalize">
+                          {investor?.referredBy?.mobile || "N/A"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Plan Details */}
                 <div className="bg-white p-6 rounded-lg border border-gray-200">
@@ -859,6 +974,9 @@ const ComprehensiveInvestmentsView = ({
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Status
                         </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Remarks
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -893,6 +1011,15 @@ const ComprehensiveInvestmentsView = ({
                           <td className="px-6 py-4 whitespace-nowrap">
                             {getStatusBadge(payment.status)}
                           </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <MessageCircleCode
+                              onClick={() => {
+                                setPaymentSchedule(payment);
+                                setShowRemarksForm(true);
+                              }}
+                              className="h-5 w-5 text-blue-600 cursor-pointer"
+                            />
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -926,8 +1053,49 @@ const ComprehensiveInvestmentsView = ({
                 />
               </motion.div>
             )}
+
+            {/* Referal Tab */}
+            {activeTab === "referal" && user?.role === "admin" && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-6">
+                  Referral Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-white px-6 ">
+                    <p className="text-md text-gray-900">
+                      Referrer Name : {investor?.referralCode || "N/A"}
+                    </p>
+                  </div>
+                  <div className="bg-white px-6 ">
+                    <p className="text-md text-gray-900">
+                      Referrer Email : {investor?.referredBy?.name || "N/A"}
+                    </p>
+                  </div>
+                  <div className="bg-white px-6 ">
+                    <p className="text-md text-gray-900">
+                      Referrer Mobile : {investor?.referredBy?.mobile || "N/A"}
+                    </p>
+                  </div>
+                  <div className="bg-white px-6 ">
+                    <p className="text-md text-gray-900">
+                      Referrer Alt Mobile : {investor?.referredBy?.name || 0}
+                    </p>
+                  </div>
+                  <div className="bg-white px-6 ">
+                    <p className="text-md text-gray-900">
+                      Relation with referrer : {investor?.referredBy?.name || 0}
+                    </p>
+                  </div>
+                  <div className="bg-white px-6 ">
+                    <p className="text-md text-gray-900">
+                      Relation fee : {investor?.referredBy?.name || 0}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* Investment Creation Modal */}
@@ -942,6 +1110,22 @@ const ComprehensiveInvestmentsView = ({
           plans={plans}
           onSubmit={handleCreateInvestment}
           onCancel={() => setShowInvestmentForm(false)}
+        />
+      </Modal>
+
+      {/* Remarks Creation Modal */}
+      <Modal
+        isOpen={showRemarksForm}
+        onClose={() => setShowRemarksForm(false)}
+        title={`Add Remarks for ${investment.investmentId}`}
+        size="md"
+      >
+        <CreateRemarksForm
+          investmentId={investment._id}
+          investment={investment}
+          paymentSchedule={paymentSchedule}
+          onSubmit={handleRemarksSubmit}
+          onCancel={() => setShowRemarksForm(false)}
         />
       </Modal>
     </div>
@@ -1871,6 +2055,230 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
         </Button>
       </div>
     </div>
+  );
+};
+
+const CreateRemarksForm = ({
+  investmentId,
+  investment,
+  paymentSchedule,
+  onSubmit,
+  onCancel,
+}) => {
+  const [submitting, setSubmitting] = useState(false);
+  const [comments, setComments] = useState(commentData);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    defaultValues: {
+      remarks: "",
+    },
+  });
+  console.log(paymentSchedule, "paymentSchedule");
+
+  const [activeReply, setActiveReply] = useState<number | null>(null);
+  const [replyText, setReplyText] = useState("");
+
+  const handleReplyToggle = (index: number) => {
+    setActiveReply(index);
+    setReplyText("");
+  };
+
+  const handleReplySubmit = (e: React.FormEvent, parentIndex: number) => {
+    e.preventDefault();
+    if (!replyText.trim()) return;
+
+    const newReply = {
+      author: "Current User", // dynamically from logged-in user
+      text: replyText,
+      date: new Date().toISOString(),
+    };
+
+    const updated = [...comments];
+    updated[parentIndex].replies = [
+      ...(updated[parentIndex].replies || []),
+      newReply,
+    ];
+    setComments(updated);
+    setActiveReply(null);
+    setReplyText("");
+  };
+
+  const handleFormSubmit = async (data) => {
+    try {
+      setSubmitting(true);
+      await investmentsService.addRemarks(investmentId, data.remarks);
+      toast.success("Remarks added successfully");
+      onSubmit();
+    } catch (error) {
+      console.error("Error adding remarks:", error);
+      toast.error(error.response?.data?.message || "Failed to add remarks");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const formatCurrency = (amount) => {
+    if (amount === undefined || amount === null) return "N/A";
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+    }).format(amount);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.2 }}
+    >
+      <div className="space-y-6">
+        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+          <div className="flex items-center justify-between bg-gradient-to-r from-blue-600 to-blue-700 p-4 rounded shadow-sm">
+            <p className="text-sm text-white">
+              Payment Due Date:{" "}
+              {new Date(paymentSchedule?.dueDate).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              }) || "N/A"}
+            </p>
+            <p className="text-sm text-white">
+              Amount Due:{" "}
+              {formatCurrency(paymentSchedule?.totalAmount) || "N/A"}
+            </p>
+          </div>
+          <div>
+            <ul className="space-y-6">
+              {comments.map((comment, index) => (
+                <li key={index} className="relative group">
+                  {/* Main comment */}
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      <div className="h-8 w-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold">
+                        {comment.author?.[0]}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {comment.author}
+                        <span className="text-xs text-gray-500 ml-2">
+                          {new Date(comment.date).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-700">
+                        {comment.text}
+                      </div>
+
+                      {/* Reply button */}
+                      <button
+                        type="button"
+                        onClick={() => handleReplyToggle(index)}
+                        className="mt-1 text-xs text-blue-500 hover:underline"
+                      >
+                        Reply
+                      </button>
+
+                      {/* Reply form */}
+                      {activeReply === index && (
+                        <form
+                          onSubmit={(e) => handleReplySubmit(e, index)}
+                          className="mt-2 space-y-2"
+                        >
+                          <textarea
+                            value={replyText}
+                            onChange={(e) => setReplyText(e.target.value)}
+                            rows={2}
+                            className="w-full p-2 border rounded text-sm"
+                            placeholder="Write a reply..."
+                          />
+                          <div className="flex space-x-2 justify-end">
+                            <button
+                              type="button"
+                              className="text-xs text-gray-500 hover:underline"
+                              onClick={() => setActiveReply(null)}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              className="text-xs text-white bg-blue-600 px-3 py-1 rounded hover:bg-blue-700"
+                            >
+                              Post
+                            </button>
+                          </div>
+                        </form>
+                      )}
+
+                      {/* Replies */}
+                      {comment.replies?.length > 0 && (
+                        <ul className="mt-3 space-y-2 pl-6 border-l border-gray-300">
+                          {comment.replies.map((reply, rIndex) => (
+                            <li
+                              key={rIndex}
+                              className="flex items-start space-x-3"
+                            >
+                              <div className="flex-shrink-0">
+                                <div className="h-6 w-6 rounded-full bg-gray-400 text-white flex items-center justify-center text-xs font-semibold">
+                                  {reply.author?.[0]}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-xs font-medium text-gray-900">
+                                  {reply.author}
+                                  <span className="text-[10px] text-gray-500 ml-1">
+                                    {new Date(reply.date).toLocaleDateString()}
+                                  </span>
+                                </div>
+                                <div className="text-xs text-gray-700">
+                                  {reply.text}
+                                </div>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Remarks *
+            </label>
+            <textarea
+              {...register("remarks", { required: "Remarks are required" })}
+              rows={3}
+              className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Enter remarks"
+            />
+            {errors.remarks && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.remarks.message}
+              </p>
+            )}
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              loading={submitting}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Add Remarks
+            </Button>
+          </div>
+        </form>
+      </div>
+    </motion.div>
   );
 };
 

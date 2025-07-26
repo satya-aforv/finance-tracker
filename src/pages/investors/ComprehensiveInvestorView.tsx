@@ -22,6 +22,7 @@ import {
   Trash2,
   Info,
   Clock,
+  Users2Icon,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm, useWatch } from "react-hook-form";
@@ -142,9 +143,15 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
   const [showInvestmentForm, setShowInvestmentForm] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedPlanOption, setSelectedPlanOption] = useState("existing"); // 'existing' or 'new'
+  const [expandedId, setExpandedId] = useState(null);
+  const [investmentActiveTab, setInvestmentActiveTab] = useState("schedule");
 
   // Check if user can manage (admin/finance_manager)
   const canManage = user?.role === "admin" || user?.role === "finance_manager";
+
+  const toggleExpand = (id) => {
+    setExpandedId((prevId) => (prevId === id ? null : id));
+  };
 
   // Fetch investor data
   useEffect(() => {
@@ -417,8 +424,6 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
               {[
                 { id: "overview", label: "Overview", icon: User },
                 { id: "investments", label: "Investments", icon: TrendingUp },
-                { id: "schedule", label: "Payment Schedule", icon: Calendar },
-                { id: "timeline", label: "Activity Timeline", icon: Clock },
                 { id: "documents", label: "Documents", icon: FileText },
                 { id: "referal", label: "Referal Details", icon: Clock },
               ].map((tab) => {
@@ -475,20 +480,52 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                         <p className="font-medium">{investor.phone}</p>
                       </div>
                     </div>
+                    <div className="flex items-center space-x-3">
+                      <Phone className="h-5 w-5 text-gray-400" />
+                      <div>
+                        <p className="text-sm text-gray-600">Alternate Phone</p>
+                        <p className="font-medium">
+                          {investor?.altPhone || "N/A"}
+                        </p>
+                      </div>
+                    </div>
                     <div className="flex items-start space-x-3">
                       <MapPin className="h-5 w-5 text-gray-400 mt-1" />
                       <div>
-                        <p className="text-sm text-gray-600">Address</p>
+                        <p className="text-sm text-gray-600">Present Address</p>
                         <p className="font-medium">
-                          {[
-                            investor.address?.street,
-                            investor.address?.city,
-                            investor.address?.state,
-                            investor.address?.pincode,
-                            investor.address?.country,
-                          ]
-                            .filter(Boolean)
-                            .join(", ")}
+                          {investor?.address?.present
+                            ? [
+                                investor?.address?.present?.street,
+                                investor?.address?.present?.city,
+                                investor?.address?.present?.state,
+                                investor?.address?.present?.pincode,
+                                investor?.address?.present?.country,
+                              ]
+                                .filter(Boolean)
+                                .join(", ")
+                            : "N/A"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start space-x-3">
+                      <MapPin className="h-5 w-5 text-gray-400 mt-1" />
+                      <div>
+                        <p className="text-sm text-gray-600">
+                          Permanent Address
+                        </p>
+                        <p className="font-medium">
+                          {investor?.address?.permanent
+                            ? [
+                                investor?.address?.permanent?.street,
+                                investor?.address?.permanent?.city,
+                                investor?.address?.permanent?.state,
+                                investor?.address?.permanent?.pincode,
+                                investor?.address?.permanent?.country,
+                              ]
+                                .filter(Boolean)
+                                .join(", ")
+                            : "N/A"}
                         </p>
                       </div>
                     </div>
@@ -542,6 +579,26 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                         </div>
                       </div>
                     </div>
+                    <div className="flex items-start space-x-3">
+                      <Users2Icon className="h-5 w-5 text-gray-400 mt-1" />
+                      <div>
+                        <p className="text-sm text-gray-600">Nominee Details</p>
+                        <div className="space-y-1">
+                          <p className="font-medium">
+                            Name: {investor?.nominee?.name || "N/A"}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Email: {investor?.nominee?.email || "N/A"}
+                          </p>
+                          <p className="text-sm">
+                            Mobile: {investor?.nominee?.mobile || "N/A"}
+                          </p>
+                          <p className="text-sm">
+                            Relation: {investor?.nominee?.relation || "N/A"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                     <div className="flex items-center space-x-3">
                       <CheckCircle className="h-5 w-5 text-green-500" />
                       <div>
@@ -585,185 +642,279 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {investments.map((investment, index) => (
-                      <motion.div
-                        key={investment._id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
-                      >
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                          <div>
-                            <p className="text-sm text-gray-600">
-                              Investment ID
-                            </p>
-                            <p className="font-semibold text-blue-600">
-                              {investment.investmentId}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              {investment.plan?.name}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600">
-                              Principal Amount
-                            </p>
-                            <p className="font-semibold">
-                              {formatCurrency(investment.principalAmount)}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              {investment.plan?.interestRate}%{" "}
-                              {investment.plan?.interestType}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600">
-                              Investment Date
-                            </p>
-                            <p className="font-semibold">
-                              {formatDate(investment.investmentDate)}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Maturity: {formatDate(investment.maturityDate)}
-                            </p>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm text-gray-600">Status</p>
-                              {getStatusBadge(investment.status)}
+                    {investments.map((investment, index) => {
+                      const isExpanded = expandedId === investment.investmentId;
+                      return (
+                        <motion.div
+                          key={investment._id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                        >
+                          <div
+                            key={investment.investmentId}
+                            className="border rounded-lg p-4 bg-white transition-all duration-300 ease-in-out"
+                          >
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                              <div>
+                                <p className="text-sm text-gray-600">
+                                  Investment ID
+                                </p>
+                                <p className="font-semibold text-blue-600">
+                                  {investment.investmentId}
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                  {investment.plan?.name}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-600">
+                                  Principal Amount
+                                </p>
+                                <p className="font-semibold">
+                                  {formatCurrency(investment.principalAmount)}
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                  {investment.plan?.interestRate}%{" "}
+                                  {investment.plan?.interestType}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-600">
+                                  Investment Date
+                                </p>
+                                <p className="font-semibold">
+                                  {formatDate(investment.investmentDate)}
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                  Maturity:{" "}
+                                  {formatDate(investment.maturityDate)}
+                                </p>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-sm text-gray-600">
+                                    Status
+                                  </p>
+                                  {getStatusBadge(investment.status)}
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    toggleExpand(investment.investmentId)
+                                  }
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  {isExpanded ? "Hide Details" : "View Details"}
+                                </Button>
+                              </div>
                             </div>
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
-                            </Button>
+
+                            {/* Animated expand/collapse section */}
+                            <div
+                              className={`transition-all duration-500 overflow-hidden mt-2 ${
+                                isExpanded
+                                  ? "max-h-[500px] opacity-100"
+                                  : "max-h-0 opacity-0"
+                              }`}
+                            >
+                              <div className="pt-4 border-t text-sm text-gray-700">
+                                {/* Tabs */}
+                                <div className="bg-white rounded-lg shadow-sm border">
+                                  <div className="border-b border-gray-200">
+                                    <nav className="-mb-px flex space-x-8 px-6">
+                                      {[
+                                        {
+                                          id: "schedule",
+                                          label: "Payment Schedule",
+                                          icon: Calendar,
+                                        },
+                                        {
+                                          id: "timeline",
+                                          label: "Activity Timeline",
+                                          icon: Clock,
+                                        },
+                                      ].map((tab) => {
+                                        if (
+                                          user?.role !== "admin" &&
+                                          tab.id === "referal"
+                                        ) {
+                                          return null;
+                                        } else {
+                                          return (
+                                            <button
+                                              key={tab.id}
+                                              onClick={() =>
+                                                setInvestmentActiveTab(tab.id)
+                                              }
+                                              className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                                                investmentActiveTab === tab.id
+                                                  ? "border-blue-500 text-blue-600"
+                                                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                                              }`}
+                                            >
+                                              <tab.icon className="h-4 w-4" />
+                                              <span>{tab.label}</span>
+                                            </button>
+                                          );
+                                        }
+                                      })}
+                                    </nav>
+                                  </div>
+
+                                  <div className="p-6">
+                                    {/* Schedule Tab */}
+                                    {investments &&
+                                    investments?.length > 0 &&
+                                    investmentActiveTab === "schedule" ? (
+                                      <motion.div
+                                        initial={{ opacity: 0, x: 20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        className="space-y-4"
+                                      >
+                                        <div className="flex justify-between items-center">
+                                          <h3 className="text-lg font-semibold text-gray-900">
+                                            Payment Schedule
+                                          </h3>
+                                          <div className="text-sm text-gray-500">
+                                            {investment.schedule.length} total
+                                            payments
+                                          </div>
+                                        </div>
+
+                                        <div className="overflow-x-auto bg-white rounded-lg border border-gray-200">
+                                          <table className="min-w-full divide-y divide-gray-200">
+                                            <thead className="bg-gray-50">
+                                              <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                  Month
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                  Due Date
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                  Interest
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                  Principal
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                  Total Amount
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                  Paid Amount
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                  Balance
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                  Status
+                                                </th>
+                                              </tr>
+                                            </thead>
+                                            <tbody className="bg-white divide-y divide-gray-200">
+                                              {investment.schedule.map(
+                                                (payment, index) => (
+                                                  <tr
+                                                    key={index}
+                                                    className="hover:bg-gray-50 transition-colors"
+                                                  >
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                      #{payment.month}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                      {formatDate(
+                                                        payment.dueDate
+                                                      )}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                      {formatCurrency(
+                                                        payment.interestAmount
+                                                      )}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                      {formatCurrency(
+                                                        payment.principalAmount
+                                                      )}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                      {formatCurrency(
+                                                        payment.totalAmount
+                                                      )}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
+                                                      {formatCurrency(
+                                                        payment.paidAmount
+                                                      )}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-medium">
+                                                      {formatCurrency(
+                                                        payment.totalAmount -
+                                                          payment.paidAmount
+                                                      )}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                      {getStatusBadge(
+                                                        payment.status
+                                                      )}
+                                                    </td>
+                                                  </tr>
+                                                )
+                                              )}
+                                            </tbody>
+                                          </table>
+                                        </div>
+                                      </motion.div>
+                                    ) : (
+                                      investmentActiveTab === "schedule" && (
+                                        <div className="text-center py-12">
+                                          <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                                          <p className="text-gray-500">
+                                            No payment schedule available for
+                                            this investment
+                                          </p>
+                                        </div>
+                                      )
+                                    )}
+
+                                    {/* Timeline Tab */}
+                                    {investments &&
+                                    investments?.length > 0 &&
+                                    investmentActiveTab === "timeline"
+                                      ? investment && (
+                                          <motion.div
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                          >
+                                            <InvestmentTimeline
+                                              investmentId={investment?._id}
+                                              isEditable={canManage}
+                                            />
+                                          </motion.div>
+                                        )
+                                      : investmentActiveTab === "timeline" && (
+                                          <div className="text-center py-12">
+                                            <Clock className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                                            <p className="text-gray-500">
+                                              No activity timeline available for
+                                              this investment
+                                            </p>
+                                          </div>
+                                        )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    ))}
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
             )}
-
-            {/* Schedule Tab */}
-            {investments &&
-            investments?.length > 0 &&
-            activeTab === "schedule" ? (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="space-y-4"
-              >
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Payment Schedule
-                  </h3>
-                  <div className="text-sm text-gray-500">
-                    {investment.schedule.length} total payments
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto bg-white rounded-lg border border-gray-200">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Month
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Due Date
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Interest
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Principal
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Total Amount
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Paid Amount
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Balance
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {investment.schedule.map((payment, index) => (
-                        <tr
-                          key={index}
-                          className="hover:bg-gray-50 transition-colors"
-                        >
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            #{payment.month}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {formatDate(payment.dueDate)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {formatCurrency(payment.interestAmount)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {formatCurrency(payment.principalAmount)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {formatCurrency(payment.totalAmount)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
-                            {formatCurrency(payment.paidAmount)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-medium">
-                            {formatCurrency(
-                              payment.totalAmount - payment.paidAmount
-                            )}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {getStatusBadge(payment.status)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </motion.div>
-            ) : (
-              activeTab === "schedule" && (
-                <div className="text-center py-12">
-                  <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-500">
-                    No payment schedule available for this investment
-                  </p>
-                </div>
-              )
-            )}
-
-            {/* Timeline Tab */}
-            {investments && investments?.length > 0 && activeTab === "timeline"
-              ? investment && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                  >
-                    <InvestmentTimeline
-                      investmentId={investment?._id}
-                      isEditable={canManage}
-                    />
-                  </motion.div>
-                )
-              : activeTab === "timeline" && (
-                  <div className="text-center py-12">
-                    <Clock className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                    <p className="text-gray-500">
-                      No activity timeline available for this investment
-                    </p>
-                  </div>
-                )}
 
             {/* Documents Tab */}
             {activeTab === "documents" && (
@@ -780,7 +931,7 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
               </div>
             )}
 
-            {/* Documents Tab */}
+            {/* Referal Tab */}
             {activeTab === "referal" && user?.role === "admin" && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-6">

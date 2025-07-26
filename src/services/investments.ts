@@ -18,6 +18,10 @@ export const investmentsService = {
     return api.get('/investments', { params });
   },
 
+  async addRemarks(id: string, remarks: string): Promise<ApiResponse<Investment>> {
+    return api.put(`/investments/${id}/remarks`, { remarks });
+  },
+
   async getInvestment(id: string): Promise<ApiResponse<Investment>> {
     return api.get(`/investments/${id}`);
   },
