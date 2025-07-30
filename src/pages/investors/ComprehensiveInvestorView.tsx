@@ -493,30 +493,30 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                     <div className="space-y-4">
                       <div className="flex justify-between items-center py-1 border-b border-gray-100">
                         <span className="text-gray-600">Full Name:</span>
-                        <span className="font-medium">{investor.name}</span>
+                        <span className="font-medium">{investor?.name}</span>
                       </div>
                       <div className="flex justify-between items-center py-1 border-b border-gray-100">
                         <span className="text-gray-600">Email:</span>
-                        <span className="font-medium">{investor.email}</span>
+                        <span className="font-medium">{investor?.email}</span>
                       </div>
                       <div className="flex justify-between items-center py-1 border-b border-gray-100">
                         <span className="text-gray-600">Phone:</span>
                         <span className="font-medium text-green-600">
-                          {investor.phone}
+                          {investor?.phone}
                         </span>
                       </div>
                       <div className="flex justify-between items-center py-1 border-b border-gray-100">
                         <span className="text-gray-600">Alternate Phone:</span>
-                        <span className="font-medium capitalize">
+                        <span className="font-xs capitalize">
                           {investor?.altPhone || "N/A"}
                         </span>
                       </div>
                       <div className="flex justify-between items-center py-1 border-b border-gray-100">
                         <span className="text-gray-600">Present Address:</span>
-                        <span className="font-medium">
+                        <span className="font-medium text-[14px]">
                           {investor?.address?.present
                             ? [
-                                investor?.address?.present?.street,
+                                // investor?.address?.present?.street,
                                 investor?.address?.present?.city,
                                 investor?.address?.present?.state,
                                 investor?.address?.present?.pincode,
@@ -531,10 +531,10 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                         <span className="text-gray-600">
                           Permanent Address:
                         </span>
-                        <span className="font-medium">
+                        <span className="font-medium text-[14px]">
                           {investor?.address?.permanent
                             ? [
-                                investor?.address?.permanent?.street,
+                                // investor?.address?.permanent?.street,
                                 investor?.address?.permanent?.city,
                                 investor?.address?.permanent?.state,
                                 investor?.address?.permanent?.pincode,
@@ -682,7 +682,8 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                 ) : (
                   <div className="space-y-4">
                     {investments.map((investment, index) => {
-                      const isExpanded = expandedId === investment.investmentId;
+                      const isExpanded =
+                        expandedId === investment?.investmentId;
                       return (
                         <motion.div
                           key={investment._id}
@@ -823,7 +824,9 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                                             </div>
                                           </div>
 
-                                          {isExpanded ? (
+                                          {isExpanded &&
+                                          investment?.schedule &&
+                                          investment?.schedule?.length > 0 ? (
                                             <div className="bg-white rounded-lg border border-gray-200  overflow-x-auto">
                                               <PaginatedSchedule
                                                 schedule={
@@ -1018,20 +1021,20 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                       <div className="flex justify-between items-center py-1 border-b border-gray-100">
                         <span className="text-gray-600">Referrer Name:</span>
                         <span className="font-medium">
-                          {investor?.referralCode || "N/A"}
+                          {investor?.referral?.name || "N/A"}
                         </span>
                       </div>
                       <div className="flex justify-between items-center py-1 border-b border-gray-100">
                         <span className="text-gray-600">Referrer Email:</span>
                         <span className="font-medium">
                           {" "}
-                          {investor?.referredBy?.name || "N/A"}
+                          {investor?.referral?.email || "N/A"}
                         </span>
                       </div>
                       <div className="flex justify-between items-center py-1 border-b border-gray-100">
                         <span className="text-gray-600">Referrer Mobile:</span>
                         <span className="font-medium text-green-600">
-                          {investor?.referredBy?.mobile || "N/A"}
+                          {investor?.referral?.mobile || "N/A"}
                         </span>
                       </div>
                       <div className="flex justify-between items-center py-1 border-b border-gray-100">
@@ -1039,7 +1042,7 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                           Referrer Alt Mobile:
                         </span>
                         <span className="font-medium capitalize">
-                          {investor?.referredBy?.altMobile || "N/A"}
+                          {investor?.referral?.altMobile || "N/A"}
                         </span>
                       </div>
                       <div className="flex justify-between items-center py-1 border-b border-gray-100">
@@ -1047,15 +1050,15 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                           Relation with referrer:
                         </span>
                         <span className="font-medium">
-                          {investor?.referredBy?.relation || "N/A"}
+                          {investor?.referral?.type || "N/A"}
                         </span>
                       </div>
-                      <div className="flex justify-between items-center py-1">
+                      {/* <div className="flex justify-between items-center py-1">
                         <span className="text-gray-600">Referal fee:</span>
                         <span className="font-medium">
-                          {investor?.referredBy?.referalFee || "N/A"}
+                          {investor?.referral?.referalFee || "N/A"}
                         </span>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                 </div>

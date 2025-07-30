@@ -83,22 +83,134 @@ const investorSchema = new mongoose.Schema(
       match: [/^[6-9]\d{9}$/, "Please enter a valid 10-digit phone number"],
     },
     address: {
-      street: String,
-      city: String,
-      state: String,
-      pincode: {
-        type: String,
-        match: [/^\d{6}$/, "Please enter a valid 6-digit pincode"],
+      present: {
+        street: {
+          type: String,
+          trim: true,
+        },
+        city: {
+          type: String,
+          trim: true,
+        },
+        state: {
+          type: String,
+          trim: true,
+        },
+        pincode: {
+          type: String,
+          match: [/^\d{6}$/, "Please enter a valid 6-digit pincode"],
+          trim: true,
+        },
+        country: {
+          type: String,
+          default: "India",
+          trim: true,
+        },
       },
-      country: {
-        type: String,
-        default: "India",
+      permanent: {
+        street: {
+          type: String,
+          trim: true,
+        },
+        city: {
+          type: String,
+          trim: true,
+        },
+        state: {
+          type: String,
+          trim: true,
+        },
+        pincode: {
+          type: String,
+          match: [/^\d{6}$/, "Please enter a valid 6-digit pincode"],
+          trim: true,
+        },
+        country: {
+          type: String,
+          default: "India",
+          trim: true,
+        },
+      },
+      sameAsPresent: {
+        type: Boolean,
+        default: false,
       },
     },
     kyc: {
       type: kycSchema,
       required: [true, "KYC details are required"],
     },
+    nominee: {
+      name: {
+        type: String,
+        trim: true,
+      },
+      email: {
+        type: String,
+        trim: true,
+        lowercase: true,
+        match: [
+          /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+          "Please enter a valid email",
+        ],
+      },
+      mobile: {
+        type: String,
+        match: [/^[6-9]\d{9}$/, "Please enter a valid 10-digit phone number"],
+      },
+      relation: {
+        type: String,
+        trim: true,
+      },
+    },
+    referral: {
+      name: {
+        type: String,
+        trim: true,
+      },
+      email: {
+        type: String,
+        trim: true,
+        lowercase: true,
+        match: [
+          /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+          "Please enter a valid email",
+        ],
+      },
+      mobile: {
+        type: String,
+        match: [/^[6-9]\d{9}$/, "Please enter a valid 10-digit phone number"],
+      },
+      altMobile: {
+        type: String,
+        match: [/^[6-9]\d{9}$/, "Please enter a valid 10-digit phone number"],
+      },
+      type: {
+        type: String,
+        enum: [
+          "employee",
+          "agent",
+          "consultant",
+          "friend",
+          "relative",
+          "other",
+        ],
+      },
+      otherTypeDetail: {
+        type: String,
+        trim: true,
+      },
+      referralFeeExpectation: {
+        type: Boolean,
+        default: false,
+      },
+      referralFeePercentMonthly: {
+        type: Number,
+        min: 0,
+        max: 100,
+      },
+    },
+
     agreements: [
       {
         fileName: String,
