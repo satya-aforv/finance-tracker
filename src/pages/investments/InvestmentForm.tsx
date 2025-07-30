@@ -1,14 +1,20 @@
 // src/pages/investments/InvestmentForm.tsx - Updated for new plan structure
-import React, { useState, useEffect } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
-import { AlertTriangle, CheckCircle, Info, Calculator, Calendar } from 'lucide-react';
-import Button from '../../components/common/Button';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { investorsService } from '../../services/investors';
-import { plansService } from '../../services/plans';
-import { investmentsService } from '../../services/investments';
-import { Investor, Plan, CalculationResult } from '../../types';
-import toast from 'react-hot-toast';
+import React, { useState, useEffect } from "react";
+import { useForm, useWatch } from "react-hook-form";
+import {
+  AlertTriangle,
+  CheckCircle,
+  Info,
+  Calculator,
+  Calendar,
+} from "lucide-react";
+import Button from "../../components/common/Button";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import { investorsService } from "../../services/investors";
+import { plansService } from "../../services/plans";
+import { investmentsService } from "../../services/investments";
+import { Investor, Plan, CalculationResult } from "../../types";
+import toast from "react-hot-toast";
 
 interface InvestmentFormProps {
   onSubmit: (data: any) => void;
@@ -23,11 +29,15 @@ interface FormData {
   notes: string;
 }
 
-const InvestmentForm: React.FC<InvestmentFormProps> = ({ onSubmit, onCancel }) => {
+const InvestmentForm: React.FC<InvestmentFormProps> = ({
+  onSubmit,
+  onCancel,
+}) => {
   const [investors, setInvestors] = useState<Investor[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
-  const [calculationResult, setCalculationResult] = useState<CalculationResult | null>(null);
+  const [calculationResult, setCalculationResult] =
+    useState<CalculationResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [calculating, setCalculating] = useState(false);
 
@@ -37,30 +47,30 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ onSubmit, onCancel }) =
     watch,
     setValue,
     control,
-    formState: { errors, isSubmitting }
+    formState: { errors, isSubmitting },
   } = useForm<FormData>({
     defaultValues: {
-      investmentDate: new Date().toISOString().split('T')[0],
-      notes: ''
-    }
+      investmentDate: new Date().toISOString().split("T")[0],
+      notes: "",
+    },
   });
 
-  const watchPlan = useWatch({ control, name: 'plan' });
-  const watchPrincipalAmount = useWatch({ control, name: 'principalAmount' });
-  const watchInvestor = useWatch({ control, name: 'investor' });
+  const watchPlan = useWatch({ control, name: "plan" });
+  const watchPrincipalAmount = useWatch({ control, name: "principalAmount" });
+  const watchInvestor = useWatch({ control, name: "investor" });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [investorsResponse, plansResponse] = await Promise.all([
           investorsService.getInvestors({ limit: 100 }),
-          plansService.getActivePlans()
+          plansService.getActivePlans(),
         ]);
-        
+
         setInvestors(investorsResponse.data || []);
         setPlans(plansResponse.data || []);
       } catch (error: any) {
-        toast.error('Failed to load form data');
+        toast.error("Failed to load form data");
       } finally {
         setLoading(false);
       }
@@ -71,7 +81,7 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ onSubmit, onCancel }) =
 
   useEffect(() => {
     if (watchPlan) {
-      const plan = plans.find(p => p._id === watchPlan);
+      const plan = plans.find((p) => p._id === watchPlan);
       setSelectedPlan(plan || null);
       // Clear calculation when plan changes
       setCalculationResult(null);
@@ -83,12 +93,16 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ onSubmit, onCancel }) =
 
   // Auto-calculate when both plan and amount are selected
   useEffect(() => {
-    if (selectedPlan && watchPrincipalAmount && watchPrincipalAmount >= selectedPlan.minInvestment) {
+    if (
+      selectedPlan &&
+      watchPrincipalAmount &&
+      watchPrincipalAmount >= selectedPlan.minInvestment
+    ) {
       calculateReturns();
     } else {
       setCalculationResult(null);
     }
-  }, [selectedPlan, watchPrincipalAmount]);
+  }, [selectedPlan, watchPrincipalAmount, watchPlan]);
 
   const calculateReturns = async () => {
     if (!selectedPlan || !watchPrincipalAmount) return;
@@ -97,11 +111,11 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ onSubmit, onCancel }) =
       setCalculating(true);
       const response = await investmentsService.calculateReturns({
         planId: selectedPlan._id,
-        principalAmount: watchPrincipalAmount
+        principalAmount: watchPrincipalAmount,
       });
       setCalculationResult(response.data);
     } catch (error: any) {
-      console.warn('Calculation failed:', error);
+      console.warn("Calculation failed:", error);
       // Don't show error toast for calculation failures as they're not critical
     } finally {
       setCalculating(false);
@@ -109,56 +123,65 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ onSubmit, onCancel }) =
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
       minimumFractionDigits: 0,
     }).format(amount);
   };
 
   const getSelectedInvestor = () => {
-    return investors.find(inv => inv._id === watchInvestor);
+    return investors.find((inv) => inv._id === watchInvestor);
   };
 
   const getPaymentTypeLabel = (paymentType: string) => {
-    return paymentType === 'interest' ? 'Interest Only' : 'Interest + Principal';
+    return paymentType === "interest"
+      ? "Interest Only"
+      : "Interest + Principal";
   };
 
   const getPaymentFrequency = (plan: Plan) => {
-    if (plan.paymentType === 'interest' && plan.interestPayment) {
+    if (plan.paymentType === "interest" && plan.interestPayment) {
       return plan.interestPayment.interestFrequency;
-    } else if (plan.paymentType === 'interestWithPrincipal' && plan.interestWithPrincipalPayment) {
+    } else if (
+      plan.paymentType === "interestWithPrincipal" &&
+      plan.interestWithPrincipalPayment
+    ) {
       return plan.interestWithPrincipalPayment.paymentFrequency;
     }
-    return 'Not configured';
+    return "Not configured";
   };
 
   const validateAmount = (amount: number) => {
     if (!selectedPlan) return true;
     if (amount < selectedPlan.minInvestment) {
-      return `Minimum investment is ${formatCurrency(selectedPlan.minInvestment)}`;
+      return `Minimum investment is ${formatCurrency(
+        selectedPlan.minInvestment
+      )}`;
     }
     if (amount > selectedPlan.maxInvestment) {
-      return `Maximum investment is ${formatCurrency(selectedPlan.maxInvestment)}`;
+      return `Maximum investment is ${formatCurrency(
+        selectedPlan.maxInvestment
+      )}`;
     }
     return true;
   };
 
   const handleFormSubmit = (data: FormData) => {
     if (!selectedPlan) {
-      toast.error('Please select a plan');
+      toast.error("Please select a plan");
       return;
     }
 
     if (!calculationResult) {
-      toast.error('Unable to calculate returns. Please check your inputs.');
+      toast.error("Unable to calculate returns. Please check your inputs.");
       return;
     }
 
     // Submit with calculation data
     onSubmit({
       ...data,
-      calculationResult
+      calculationResult,
     });
   };
 
@@ -176,12 +199,18 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ onSubmit, onCancel }) =
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       {/* Investment Details */}
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Investment Details</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">
+          Investment Details
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Investor *</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Investor *
+            </label>
             <select
-              {...register('investor', { required: 'Please select an investor' })}
+              {...register("investor", {
+                required: "Please select an investor",
+              })}
               className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">Select Investor</option>
@@ -191,59 +220,85 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ onSubmit, onCancel }) =
                 </option>
               ))}
             </select>
-            {errors.investor && <p className="mt-1 text-sm text-red-600">{errors.investor.message}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Investment Plan *</label>
-            <select
-              {...register('plan', { required: 'Please select a plan' })}
-              className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">Select Plan</option>
-              {plans.map((plan) => (
-                <option key={plan._id} value={plan._id}>
-                  {plan.name} - {plan.interestRate}% {plan.interestType} ({getPaymentTypeLabel(plan.paymentType)})
-                </option>
-              ))}
-            </select>
-            {errors.plan && <p className="mt-1 text-sm text-red-600">{errors.plan.message}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Principal Amount (₹) *</label>
-            <input
-              {...register('principalAmount', {
-                required: 'Principal amount is required',
-                min: { value: 1, message: 'Amount must be greater than 0' },
-                validate: validateAmount
-              })}
-              type="number"
-              className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Enter investment amount"
-            />
-            {errors.principalAmount && <p className="mt-1 text-sm text-red-600">{errors.principalAmount.message}</p>}
-            {selectedPlan && (
-              <p className="mt-1 text-sm text-gray-500">
-                Range: {formatCurrency(selectedPlan.minInvestment)} - {formatCurrency(selectedPlan.maxInvestment)}
+            {errors.investor && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.investor.message}
               </p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Investment Date *</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Investment Plan *
+            </label>
+            <select
+              {...register("plan", { required: "Please select a plan" })}
+              className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Select Plan</option>
+              {plans.map((plan) => (
+                <option key={plan._id} value={plan._id}>
+                  {plan.name} - {plan.interestRate}% {plan.interestType} (
+                  {getPaymentTypeLabel(plan.paymentType)})
+                </option>
+              ))}
+            </select>
+            {errors.plan && (
+              <p className="mt-1 text-sm text-red-600">{errors.plan.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Principal Amount (₹) *
+            </label>
             <input
-              {...register('investmentDate', { required: 'Investment date is required' })}
+              {...register("principalAmount", {
+                required: "Principal amount is required",
+                min: { value: 1, message: "Amount must be greater than 0" },
+                validate: validateAmount,
+              })}
+              type="number"
+              className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Enter investment amount"
+            />
+            {errors.principalAmount && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.principalAmount.message}
+              </p>
+            )}
+            {selectedPlan && (
+              <p className="mt-1 text-sm text-gray-500">
+                Range: {formatCurrency(selectedPlan.minInvestment)} -{" "}
+                {formatCurrency(selectedPlan.maxInvestment)}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Investment Date *
+            </label>
+            <input
+              {...register("investmentDate", {
+                required: "Investment date is required",
+              })}
               type="date"
               className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
             />
-            {errors.investmentDate && <p className="mt-1 text-sm text-red-600">{errors.investmentDate.message}</p>}
+            {errors.investmentDate && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.investmentDate.message}
+              </p>
+            )}
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700">Notes (Optional)</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Notes (Optional)
+            </label>
             <textarea
-              {...register('notes')}
+              {...register("notes")}
               rows={3}
               className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter any additional notes"
@@ -255,7 +310,9 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ onSubmit, onCancel }) =
       {/* Selected Investor Details */}
       {selectedInvestor && (
         <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-          <h4 className="text-md font-medium text-blue-900 mb-3">Selected Investor</h4>
+          <h4 className="text-md font-medium text-blue-900 mb-3">
+            Selected Investor
+          </h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
               <span className="text-blue-700">Name:</span>
@@ -271,7 +328,9 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ onSubmit, onCancel }) =
             </div>
             <div>
               <span className="text-blue-700">Active Investments:</span>
-              <div className="font-medium">{selectedInvestor.activeInvestments}</div>
+              <div className="font-medium">
+                {selectedInvestor.activeInvestments}
+              </div>
             </div>
           </div>
         </div>
@@ -280,15 +339,21 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ onSubmit, onCancel }) =
       {/* Selected Plan Details */}
       {selectedPlan && (
         <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-          <h4 className="text-md font-medium text-green-900 mb-3">Selected Plan Details</h4>
+          <h4 className="text-md font-medium text-green-900 mb-3">
+            Selected Plan Details
+          </h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
               <span className="text-green-700">Interest Rate:</span>
-              <div className="font-medium">{selectedPlan.interestRate}% per month</div>
+              <div className="font-medium">
+                {selectedPlan.interestRate}% per month
+              </div>
             </div>
             <div>
               <span className="text-green-700">Interest Type:</span>
-              <div className="font-medium capitalize">{selectedPlan.interestType}</div>
+              <div className="font-medium capitalize">
+                {selectedPlan.interestType}
+              </div>
             </div>
             <div>
               <span className="text-green-700">Tenure:</span>
@@ -296,15 +361,21 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ onSubmit, onCancel }) =
             </div>
             <div>
               <span className="text-green-700">Payment Type:</span>
-              <div className="font-medium">{getPaymentTypeLabel(selectedPlan.paymentType)}</div>
+              <div className="font-medium">
+                {getPaymentTypeLabel(selectedPlan.paymentType)}
+              </div>
             </div>
             <div>
               <span className="text-green-700">Payment Frequency:</span>
-              <div className="font-medium capitalize">{getPaymentFrequency(selectedPlan)}</div>
+              <div className="font-medium capitalize">
+                {getPaymentFrequency(selectedPlan)}
+              </div>
             </div>
             <div>
               <span className="text-green-700">Risk Level:</span>
-              <div className="font-medium capitalize">{selectedPlan.riskLevel}</div>
+              <div className="font-medium capitalize">
+                {selectedPlan.riskLevel}
+              </div>
             </div>
           </div>
         </div>
@@ -318,7 +389,7 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ onSubmit, onCancel }) =
             Investment Calculation
             {calculating && <LoadingSpinner size="sm" className="ml-2" />}
           </h4>
-          
+
           {calculationResult ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white p-3 rounded">
@@ -350,7 +421,10 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ onSubmit, onCancel }) =
               ) : (
                 <>
                   <AlertTriangle className="h-4 w-4" />
-                  <span>Enter a valid amount within the plan range to see calculations</span>
+                  <span>
+                    Enter a valid amount within the plan range to see
+                    calculations
+                  </span>
                 </>
               )}
             </div>
@@ -359,7 +433,7 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ onSubmit, onCancel }) =
       )}
 
       {/* Maturity Information */}
-      {selectedPlan && watch('investmentDate') && (
+      {selectedPlan && watch("investmentDate") && (
         <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
           <h4 className="text-md font-medium text-yellow-900 mb-3 flex items-center">
             <Calendar className="h-5 w-5 mr-2" />
@@ -369,17 +443,19 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ onSubmit, onCancel }) =
             <div>
               <span className="text-yellow-700">Start Date:</span>
               <div className="font-medium">
-                {new Date(watch('investmentDate')).toLocaleDateString('en-IN')}
+                {new Date(watch("investmentDate")).toLocaleDateString("en-IN")}
               </div>
             </div>
             <div>
               <span className="text-yellow-700">Maturity Date:</span>
               <div className="font-medium">
                 {(() => {
-                  const startDate = new Date(watch('investmentDate'));
+                  const startDate = new Date(watch("investmentDate"));
                   const maturityDate = new Date(startDate);
-                  maturityDate.setMonth(maturityDate.getMonth() + selectedPlan.tenure);
-                  return maturityDate.toLocaleDateString('en-IN');
+                  maturityDate.setMonth(
+                    maturityDate.getMonth() + selectedPlan.tenure
+                  );
+                  return maturityDate.toLocaleDateString("en-IN");
                 })()}
               </div>
             </div>
@@ -393,7 +469,9 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ onSubmit, onCancel }) =
 
       {/* Validation Status */}
       <div className="bg-gray-50 p-4 rounded-lg">
-        <h4 className="text-sm font-medium text-gray-900 mb-2">Validation Status</h4>
+        <h4 className="text-sm font-medium text-gray-900 mb-2">
+          Validation Status
+        </h4>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-sm">
           <div className="flex items-center">
             {watchInvestor ? (
@@ -412,9 +490,10 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ onSubmit, onCancel }) =
             <span className="ml-2">Plan Selected</span>
           </div>
           <div className="flex items-center">
-            {watchPrincipalAmount && selectedPlan && 
-             watchPrincipalAmount >= selectedPlan.minInvestment && 
-             watchPrincipalAmount <= selectedPlan.maxInvestment ? (
+            {watchPrincipalAmount &&
+            selectedPlan &&
+            watchPrincipalAmount >= selectedPlan.minInvestment &&
+            watchPrincipalAmount <= selectedPlan.maxInvestment ? (
               <CheckCircle className="h-4 w-4 text-green-500" />
             ) : (
               <AlertTriangle className="h-4 w-4 text-yellow-500" />
@@ -437,8 +516,8 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ onSubmit, onCancel }) =
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           loading={isSubmitting}
           disabled={!calculationResult || calculating}
         >

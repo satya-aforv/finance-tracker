@@ -50,6 +50,7 @@ const InvestorsPage: React.FC = () => {
     null
   );
   const [showFliterOptions, setShowFilterOptions] = useState(false);
+  const [filterValues, setFilterValues] = useState<InvestorFilterValues>({});
   const [userAccountModal, setUserAccountModal] =
     useState<UserAccountModalState>({
       show: false,
@@ -71,7 +72,7 @@ const InvestorsPage: React.FC = () => {
   const fetchInvestors = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await investorsService.getInvestors({
+      const params: any = {
         page: currentPage,
         limit: 10,
         search: searchTerm,
@@ -82,7 +83,21 @@ const InvestorsPage: React.FC = () => {
             : userAccountFilter === "without"
             ? false
             : undefined,
-      });
+      };
+
+      // Map filterValues to backend params
+      if (filterValues.nameOrId) params.search = filterValues.nameOrId;
+      if (filterValues.contact) params.contact = filterValues.contact;
+      if (filterValues.minInvestment)
+        params.investmentMin = filterValues.minInvestment;
+      if (filterValues.maxInvestment)
+        params.investmentMax = filterValues.maxInvestment;
+      if (filterValues.status) params.status = filterValues.status;
+      if (filterValues.userAccount === "active") params.hasUserAccount = "true";
+      if (filterValues.userAccount === "inactive")
+        params.hasUserAccount = "false";
+
+      const response = await investorsService.getInvestors(params);
 
       setInvestors(response.data || []);
       if (response.pagination) {
@@ -91,9 +106,22 @@ const InvestorsPage: React.FC = () => {
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to fetch investors");
     } finally {
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+      }, 1000);
     }
-  }, [currentPage, searchTerm, statusFilter, userAccountFilter]);
+  }, [
+    currentPage,
+    searchTerm,
+    statusFilter,
+    userAccountFilter,
+    filterValues.nameOrId,
+    filterValues.contact,
+    filterValues.minInvestment,
+    filterValues.maxInvestment,
+    filterValues.status,
+    filterValues.userAccount,
+  ]);
 
   useEffect(() => {
     fetchInvestors();
@@ -208,7 +236,23 @@ const InvestorsPage: React.FC = () => {
 
   const handleFilterChange = (filters: InvestorFilterValues) => {
     console.log("Apply filters:", filters);
-    // Apply filtering logic here for your investor list
+    setFilterValues(filters);
+    setCurrentPage(1); // Reset to first page on filter
+    // setShowFilterOptions(false);
+  };
+
+  // Handle filter reset
+  const handleFilterReset = () => {
+    setFilterValues({
+      nameOrId: "",
+      contact: "",
+      minInvestment: "",
+      maxInvestment: "",
+      userAccount: "",
+      status: "",
+    });
+    setCurrentPage(1);
+    setShowFilterOptions(false);
   };
 
   const handleResetPassword = async (
@@ -702,6 +746,7 @@ const InvestorsPage: React.FC = () => {
       >
         <InvestorFilter
           onFilterChange={handleFilterChange}
+          onReset={handleFilterReset}
           onCancel={() => setShowFilterOptions(false)}
         />
       </Modal>

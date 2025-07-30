@@ -60,9 +60,41 @@ router.get(
     const skip = (page - 1) * limit;
     const search = req.query.search;
     const status = req.query.status;
+    const city = req.query.city;
+    const kycStatus = req.query.kycStatus;
+    const contact = req.query.contact;
+    const investmentMin = req.query.investmentMin;
+    const investmentMax = req.query.investmentMax;
+    const hasUserAccount = req.query.hasUserAccount;
 
     // Build query
     let query = {};
+
+    if (city) {
+      query["address.present.city"] = city;
+    }
+    if (kycStatus) {
+      query["kyc.verificationStatus"] = kycStatus;
+    }
+
+    if (contact) {
+      query.$or = [
+        { email: { $regex: contact, $options: "i" } },
+        { phone: { $regex: contact, $options: "i" } },
+      ];
+    }
+
+    if (hasUserAccount === "true") {
+      query.userId = { $ne: null };
+    } else if (hasUserAccount === "false") {
+      query.userId = null;
+    }
+
+    if (investmentMin || investmentMax) {
+      query.totalInvestment = {};
+      if (investmentMin) query.totalInvestment.$gte = Number(investmentMin);
+      if (investmentMax) query.totalInvestment.$lte = Number(investmentMax);
+    }
 
     if (search) {
       query.$or = [
@@ -401,9 +433,12 @@ router.post(
 
     // Handle file uploads
     const files = req.files;
-    const panCardFile = files["kyc.panCardFile"]?.[0];
-    const aadharCardFile = files["kyc.aadharCardFile"]?.[0];
-    const bankProofFile = files["kyc.bankDetails.bankProofFile"]?.[0];
+    // const panCardFile = files["kyc.panCardFile"]?.[0];
+    // const aadharCardFile = files["kyc.aadharCardFile"]?.[0];
+    // const bankProofFile = files["kyc.bankDetails.bankProofFile"]?.[0];
+    const panCardFile = null;
+    const aadharCardFile = null;
+    const bankProofFile = null;
 
     // Check if user with email already exists (if creating user account)
     let userId = null;
@@ -473,32 +508,102 @@ router.post(
         createdBy: req.user._id,
       };
 
+      let newPlan = null;
+      let planId = null;
       // Add investment if provided
       if (investment) {
         investorData.investment = investment;
 
         // Handle custom plan creation if needed
         if (investment.planMode === "new" && investment.customPlan) {
+          let features = investment.customPlan.features;
+          if (typeof features === "string") {
+            features = features
+              .split(",")
+              .map((f) => f.trim())
+              .filter(Boolean);
+          }
+          const paymentType = investment.customPlan.paymentType;
+
+          // Map tenure correctly
+          const tenure = investment.customPlan.tenure;
+
           const planDetails = {
-            name: `Custom Plan for ${name}`,
-            description: "Custom investment plan created with investor",
+            name: investment.customPlan.name || `Custom Plan for ${name}`,
+            description:
+              investment.customPlan.description ||
+              "Custom investment plan created with investor",
             interestRate: investment.customPlan.interestRate,
             interestType: investment.customPlan.interestType,
-            tenure: investment.tenureMonths,
+            tenure,
             minInvestment: investment.amount,
             maxInvestment: investment.amount,
+            amountInvested: investment.amount,
+            dateOfInvestment: investment.investmentDate,
             isActive: true,
-            paymentType: "custom",
-            interestPayment: investment.customPlan.paymentFrequency,
-            ...investment.customPlan,
+            paymentType,
+            features,
+            riskLevel: investment.customPlan.riskLevel,
+            ...(paymentType === "interest"
+              ? {
+                  interestPayment: {
+                    ...investment.customPlan.interestPayment,
+                    amountInvested: investment.amount,
+                    dateOfInvestment: investment.investmentDate,
+                  },
+                }
+              : {
+                  interestWithPrincipalPayment: {
+                    ...investment.customPlan.interestWithPrincipalPayment,
+                    amountInvested: investment.amount,
+                    dateOfInvestment: investment.investmentDate,
+                  },
+                }),
+            createdBy: req.user._id,
           };
 
-          const newPlan = await Plan.create(planDetails);
+          newPlan = await Plan.create(planDetails);
+          planId = newPlan._id;
           investorData.investment.existingPlanId = newPlan._id;
+        } else if (investment.planMode === "existing") {
+          planId = investment.existingPlanId;
         }
       }
 
       const investor = await Investor.create(investorData);
+      if (investment) {
+        let plan;
+        if (investment.planMode === "new" && newPlan) {
+          plan = newPlan;
+        } else if (investment.planMode === "existing" && planId) {
+          plan = await Plan.findById(planId);
+        }
+
+        // Calculate maturity date
+        const investmentDate = new Date(investment.investmentDate);
+        const tenure = plan?.tenure || investment.tenureMonths || 0;
+        const maturityDate = new Date(investmentDate);
+        maturityDate.setMonth(maturityDate.getMonth() + Number(tenure));
+        const investmentData = {
+          investor: investor._id,
+          plan: planId,
+          principalAmount: investment.amount,
+          remainingAmount: investment.amount, // or your logic
+          totalInterestExpected: investment.totalInterestExpected || 0, // or calculate
+          totalExpectedReturns: investment.totalExpectedReturns || 0, // or calculate
+          paymentType: plan?.paymentType || investment.paymentType,
+          tenure: plan?.tenure || investment.tenureMonths,
+          interestType: plan?.interestType || investment.interestType,
+          interestRate: plan?.interestRate || investment.interestRateMonthly,
+          maturityDate,
+          investmentDate,
+          createdBy: req.user._id,
+          ...investment,
+        };
+
+        await Investment.create(investmentData);
+      }
+
       await investor.populate("createdBy", "name email");
 
       // Send welcome email if user account was created and email should be sent

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
 export interface InvestorFilterValues {
@@ -9,7 +9,7 @@ export interface InvestorFilterValues {
   userAccount: string;
   status: string;
 }
-
+const FILTER_STORAGE_KEY = "investorFilters";
 interface InvestorFilterProps {
   onFilterChange: (filters: InvestorFilterValues) => void;
   onCancel?: () => void;
@@ -21,26 +21,37 @@ const InvestorFilter: React.FC<InvestorFilterProps> = ({
   onCancel,
   onReset,
 }) => {
-  const [filters, setFilters] = useState<InvestorFilterValues>({
-    nameOrId: "",
-    contact: "",
-    minInvestment: "",
-    maxInvestment: "",
-    userAccount: "",
-    status: "",
-  });
+  const getInitialFilters = (): InvestorFilterValues => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(FILTER_STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    }
+    return {
+      nameOrId: "",
+      contact: "",
+      minInvestment: "",
+      maxInvestment: "",
+      userAccount: "",
+      status: "",
+    };
+  };
+
+  const [filters, setFilters] =
+    useState<InvestorFilterValues>(getInitialFilters);
+
+  useEffect(() => {
+    localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filters));
+  }, [filters]);
 
   const handleApplyFilters = () => {
     onFilterChange(filters);
-    setTimeout(() => {
-      onCancel();
-    }, 500);
+    onCancel();
   };
 
   const handleChange = (field: keyof InvestorFilterValues, value: string) => {
     const newFilters = { ...filters, [field]: value };
     setFilters(newFilters);
-    onFilterChange(newFilters);
+    // onFilterChange(newFilters);
   };
 
   const handleReset = () => {
@@ -53,11 +64,10 @@ const InvestorFilter: React.FC<InvestorFilterProps> = ({
       status: "",
     };
     setFilters(resetFilters);
+    localStorage.removeItem(FILTER_STORAGE_KEY);
     onFilterChange(resetFilters);
     if (onReset) onReset();
-    setTimeout(() => {
-      onCancel();
-    }, 500);
+    onCancel();
   };
 
   return (

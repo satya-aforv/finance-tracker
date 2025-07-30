@@ -1,6 +1,6 @@
 // src/pages/investors/InvestorForm.tsx - Enhanced with Nominee, Referral, Investment & Plan Config (additive only)
-import React, { useState } from "react";
-import { useForm } from "react-hook-form";
+import React, { useEffect, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import {
   Eye,
   EyeOff,
@@ -10,11 +10,17 @@ import {
   Lock,
   TrendingUp,
   FileText,
+  AlertTriangle,
+  Calendar,
+  Calculator,
+  Info,
 } from "lucide-react";
 import Button from "../../components/common/Button";
-import { Investor } from "../../types";
+import { CalculationResult, Investor, Plan } from "../../types";
 import toast from "react-hot-toast";
 import { plansService } from "../../services/plans";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import { investmentsService } from "../../services/investments";
 
 interface InvestorFormProps {
   investor?: Investor;
@@ -98,25 +104,56 @@ export interface FormData {
   };
 
   investment?: {
-    amount?: number;
+    principalAmount?: number;
     investmentDate?: string;
-    tenureMonths?: number;
-    interestRateMonthly?: number;
-    referralPercentMonthly?: number;
+    // tenureMonths?: number;
     planMode?: "existing" | "new";
     existingPlanId?: string;
     customPlan?: {
-      planType?: "interestOnly" | "interestPlusPrincipal";
-      interestRate?: number;
-      interestType?: "flat" | "reducing";
-      paymentFrequency?: "monthly" | "quarterly" | "others";
-      interestStartDate?: string;
-      principalSettlement?: "fixedTenure" | "flexibleWithdrawal";
-      withdrawalAfterPercentTenure?: number;
-      principalSettlementTermMonths?: number;
-      principalRepaymentPercent?: number;
-      interestPayoutDate?: string;
-      principalPayoutDate?: string;
+      name: string;
+      description: string;
+      interestRate: number;
+      interestType: "flat" | "reducing";
+      tenure: number;
+      minInvestment: number;
+      maxInvestment: number;
+      isActive: boolean;
+      features: string[];
+      riskLevel: "low" | "medium" | "high";
+
+      // Payment Type Selection
+      paymentType: "interest" | "interestWithPrincipal";
+
+      // Interest Payment Configuration
+      interestPayment?: {
+        dateOfInvestment: string;
+        amountInvested: number;
+        interestFrequency:
+          | "monthly"
+          | "quarterly"
+          | "half-yearly"
+          | "yearly"
+          | "others";
+        interestStartDate?: string;
+        principalRepaymentOption: "fixed" | "flexible";
+        withdrawalAfterPercentage?: number;
+        principalSettlementTerm?: number;
+      };
+
+      // Interest with Principal Payment Configuration
+      interestWithPrincipalPayment?: {
+        dateOfInvestment: string;
+        investedAmount: number;
+        principalRepaymentPercentage: number;
+        paymentFrequency:
+          | "monthly"
+          | "quarterly"
+          | "half-yearly"
+          | "yearly"
+          | "others";
+        interestPayoutDate?: string;
+        principalPayoutDate?: string;
+      };
     };
   };
 }
@@ -165,7 +202,7 @@ const getTabFields = (
     "nominee.relation",
   ],
   investments: [
-    "investment.amount",
+    "investment.principalAmount",
     "investment.investmentDate",
     "investment.tenureMonths",
     "investment.interestRateMonthly",
@@ -194,6 +231,9 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [activeTab, setActiveTab] = useState("basicDetails");
   const [plans, setPlans] = useState(existingPlans);
+  const [calculating, setCalculating] = useState(false);
+  const [calculationResult, setCalculationResult] =
+    useState<CalculationResult | null>(null);
   const [panValidation, setPanValidation] = useState<{
     isValid: boolean;
     message: string;
@@ -203,7 +243,7 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
     message: string;
   } | null>(null);
   const [createUserAccount, setCreateUserAccount] = useState(!investor); // Default to true for new investors
-
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [planMode, setPlanMode] = useState<"existing" | "new" | "">("");
   const [planType, setPlanType] = useState<
     "interestOnly" | "interestPlusPrincipal" | ""
@@ -215,6 +255,7 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
     setValue,
     trigger,
     getValues,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     defaultValues: investor
@@ -277,11 +318,11 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
             referralFeePercentMonthly: undefined,
           },
           investment: {
-            amount: undefined,
+            principalAmount: undefined,
             investmentDate: "",
-            tenureMonths: undefined,
-            interestRateMonthly: undefined,
-            referralPercentMonthly: undefined,
+            // tenureMonths: undefined,
+            // interestRateMonthly: undefined,
+            // referralPercentMonthly: undefined,
             planMode: undefined,
             existingPlanId: "",
             customPlan: {},
@@ -348,11 +389,11 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
             referralFeePercentMonthly: undefined,
           },
           investment: {
-            amount: undefined,
+            principalAmount: undefined,
             investmentDate: "",
-            tenureMonths: undefined,
-            interestRateMonthly: undefined,
-            referralPercentMonthly: undefined,
+            // tenureMonths: undefined,
+            // interestRateMonthly: undefined,
+            // referralPercentMonthly: undefined,
             planMode: undefined,
             existingPlanId: "",
             customPlan: {},
@@ -371,6 +412,10 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
   const watchInvestmentPlanMode = watch("investment.planMode");
   const watchCustomPlanType = watch("investment.customPlan.planType");
   const watchPaymentFreq = watch("investment.customPlan.paymentFrequency");
+  const watchPrincipalAmount = useWatch({
+    control,
+    name: "investment.principalAmount",
+  });
 
   const tabOrder = [
     { id: "basicDetails", label: "Basic Information" },
@@ -385,6 +430,41 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
   const isLastTab = currentTabIndex === tabOrder.length - 1;
   const prevTab = !isFirstTab ? tabOrder[currentTabIndex - 1] : null;
   const nextTab = !isLastTab ? tabOrder[currentTabIndex + 1] : null;
+  const watchPlan = useWatch({
+    control,
+    name: "investment.existingPlanId",
+  });
+  const watchPaymentType = useWatch({
+    control,
+    name: "investment.customPlan.paymentType",
+  });
+  const watchInvestor = useWatch({ control, name: "investor" });
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const getPaymentTypeLabel = (paymentType: string) => {
+    return paymentType === "interest"
+      ? "Interest Only"
+      : "Interest + Principal";
+  };
+
+  const getPaymentFrequency = (plan: Plan) => {
+    if (plan.paymentType === "interest" && plan.interestPayment) {
+      return plan.interestPayment.interestFrequency;
+    } else if (
+      plan.paymentType === "interestWithPrincipal" &&
+      plan.interestWithPrincipalPayment
+    ) {
+      return plan.interestWithPrincipalPayment.paymentFrequency;
+    }
+    return "Not configured";
+  };
 
   const generateTempPassword = () => {
     const chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
@@ -423,6 +503,49 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
       toast.error(error.response?.data?.message || "Failed to fetch plans");
     }
   };
+
+  useEffect(() => {
+    if (watchPlan) {
+      const plan = plans.find((p) => p._id === watchPlan);
+      console.log(plan, "plan");
+      setSelectedPlan(plan || null);
+      // Clear calculation when plan changes
+      setCalculationResult(null);
+    } else {
+      setSelectedPlan(null);
+      setCalculationResult(null);
+    }
+  }, [watchPlan, plans]);
+
+  const calculateReturns = async () => {
+    if (!selectedPlan || !watchPrincipalAmount) return;
+
+    try {
+      setCalculating(true);
+      const response = await investmentsService.calculateReturns({
+        planId: selectedPlan._id,
+        principalAmount: watchPrincipalAmount,
+      });
+      setCalculationResult(response.data);
+    } catch (error: any) {
+      console.warn("Calculation failed:", error);
+      // Don't show error toast for calculation failures as they're not critical
+    } finally {
+      setCalculating(false);
+    }
+  };
+
+  useEffect(() => {
+    if (
+      selectedPlan &&
+      watchPrincipalAmount &&
+      watchPrincipalAmount >= selectedPlan.minInvestment
+    ) {
+      calculateReturns();
+    } else {
+      setCalculationResult(null);
+    }
+  }, [selectedPlan, watchPrincipalAmount]);
 
   const handleSameAddress = (value: boolean) => {
     syncPermanentAddress(value);
@@ -502,6 +625,45 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
     ) : (
       <XCircle className="h-4 w-4 text-red-500" />
     );
+  };
+
+  const handleInvestorSubmit = (data: FormData) => {
+    // 1. Map principalAmount to amount for backend
+    if (data.investment?.principalAmount !== undefined) {
+      data.investment.amount = data.investment.principalAmount;
+      delete data.investment.principalAmount;
+    }
+
+    // 2. Convert features to array if it's a string
+    if (
+      data.investment?.customPlan &&
+      typeof data.investment.customPlan.features === "string"
+    ) {
+      data.investment.customPlan.features = data.investment.customPlan.features
+        .split(",")
+        .map((f) => f.trim())
+        .filter(Boolean);
+    }
+
+    // 3. Remove unused payment config
+    if (data.investment?.customPlan?.paymentType === "interest") {
+      delete data.investment.customPlan.interestWithPrincipalPayment;
+    } else if (
+      data.investment?.customPlan?.paymentType === "interestWithPrincipal"
+    ) {
+      delete data.investment.customPlan.interestPayment;
+    }
+
+    // 4. Convert referralFeeExpectation to boolean if needed
+    if (
+      data.referral &&
+      typeof data.referral.referralFeeExpectation === "string"
+    ) {
+      data.referral.referralFeeExpectation =
+        data.referral.referralFeeExpectation === "true";
+    }
+
+    onSubmit(data);
   };
 
   const passwordStrength = (password: string) => {
@@ -1573,24 +1735,24 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
                   Investing Amount & Plan
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
-                      Investment Amount (₹)
+                      Principal Amount (₹)
                     </label>
                     <input
                       type="number"
                       step="0.01"
-                      {...register("investment.amount", {
+                      {...register("investment.principalAmount", {
                         valueAsNumber: true,
                         min: { value: 0, message: "Amount >= 0" },
                       })}
                       className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="100000"
                     />
-                    {errors.investment?.amount && (
+                    {errors.investment?.principalAmount && (
                       <p className="mt-1 text-sm text-red-600">
-                        {errors.investment.amount.message}
+                        {errors.investment.principalAmount.message}
                       </p>
                     )}
                   </div>
@@ -1604,7 +1766,7 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
                       className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
-                  <div>
+                  {/* <div>
                     <label className="block text-sm font-medium text-gray-700">
                       Tenure (Months)
                     </label>
@@ -1622,11 +1784,11 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
                         {errors.investment.tenureMonths.message}
                       </p>
                     )}
-                  </div>
+                  </div> */}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                  <div>
+                  {/* <div>
                     <label className="block text-sm font-medium text-gray-700">
                       Interest Rate (%) Monthly
                     </label>
@@ -1639,8 +1801,8 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
                       className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="2"
                     />
-                  </div>
-                  {watchReferralFeeExpect === true && (
+                  </div> */}
+                  {/* {watchReferralFeeExpect === true && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700">
                         Referral % (Monthly)
@@ -1655,7 +1817,7 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
                         placeholder="0.20"
                       />
                     </div>
-                  )}
+                  )} */}
                 </div>
 
                 {/* Plan Mode Selection */}
@@ -1697,8 +1859,9 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
                       <option value="">Select Existing Plan</option>
                       {plans &&
                         plans.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.name}
+                          <option key={p._id} value={p._id}>
+                            {p.name} - {p.interestRate}% {p.interestType} (
+                            {getPaymentTypeLabel(p.paymentType)})
                           </option>
                         ))}
                     </select>
@@ -1709,33 +1872,38 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
                 {planMode === "new" && (
                   <div className="mt-6 space-y-6">
                     <h4 className="text-md font-semibold text-gray-800">
-                      Custom Plan Configuration
+                      New Plan Configuration
                     </h4>
 
-                    {/* Choose Plan Type */}
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-gray-700">
-                        Plan Type
-                      </p>
-                      <div className="flex flex-wrap items-center gap-4 text-sm">
-                        <label className="inline-flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            value="interestOnly"
-                            {...register("investment.customPlan.planType")}
-                            onChange={(e) => setPlanType(e.target.value as any)}
-                          />
-                          <span>Interest Only Plan</span>
+                    {/* Plan Name & Description */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Plan Name *
                         </label>
-                        <label className="inline-flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            value="interestPlusPrincipal"
-                            {...register("investment.customPlan.planType")}
-                            onChange={(e) => setPlanType(e.target.value as any)}
-                          />
-                          <span>Interest + Principal Plan</span>
+                        <input
+                          {...register("investment.customPlan.name", {
+                            required: "Plan name is required",
+                          })}
+                          className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Enter plan name"
+                        />
+                        {errors.investment?.customPlan?.name && (
+                          <p className="mt-1 text-sm text-red-600">
+                            {errors.investment.customPlan.name.message}
+                          </p>
+                        )}
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Description
                         </label>
+                        <textarea
+                          {...register("investment.customPlan.description")}
+                          rows={3}
+                          className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Enter plan description"
+                        />
                       </div>
                     </div>
 
@@ -1743,176 +1911,753 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
-                          Interest Rate (%) Monthly
+                          Interest Rate (% per month) *
                         </label>
                         <input
                           type="number"
                           step="0.01"
                           {...register("investment.customPlan.interestRate", {
-                            valueAsNumber: true,
+                            required: "Interest rate is required",
+                            min: {
+                              value: 0,
+                              message: "Interest rate must be positive",
+                            },
+                            max: {
+                              value: 100,
+                              message: "Interest rate cannot exceed 100%",
+                            },
                           })}
                           className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                           placeholder="2.5"
                         />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Interest Type
-                        </label>
-                        <select
-                          {...register("investment.customPlan.interestType")}
-                          className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                        >
-                          <option value="">Select...</option>
-                          <option value="flat">Flat</option>
-                          <option value="reducing">Reducing Balance</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Frequency */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Interest Payment Frequency
-                        </label>
-                        <select
-                          {...register(
-                            "investment.customPlan.paymentFrequency"
-                          )}
-                          className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                        >
-                          <option value="">Select...</option>
-                          <option value="monthly">Monthly</option>
-                          <option value="quarterly">Quarterly</option>
-                          <option value="others">Others</option>
-                        </select>
-                      </div>
-                      {watchPaymentFreq === "others" && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">
-                            Interest Start Date *
-                          </label>
-                          <input
-                            type="date"
-                            {...register(
-                              "investment.customPlan.interestStartDate"
-                            )}
-                            className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Interest Only Plan Extras */}
-                    {planType === "interestOnly" && (
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">
-                            Principal Settlement
-                          </label>
-                          <select
-                            {...register(
-                              "investment.customPlan.principalSettlement"
-                            )}
-                            className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                          >
-                            <option value="">Select...</option>
-                            <option value="fixedTenure">Fixed Tenure</option>
-                            <option value="flexibleWithdrawal">
-                              Flexible Withdrawal
-                            </option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">
-                            Withdrawal After % of Tenure
-                          </label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            {...register(
-                              "investment.customPlan.withdrawalAfterPercentTenure",
-                              {
-                                valueAsNumber: true,
-                              }
-                            )}
-                            className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="50 for 50%"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">
-                            Principal Settlement Term After Request (Months)
-                          </label>
-                          <input
-                            type="number"
-                            {...register(
-                              "investment.customPlan.principalSettlementTermMonths",
-                              {
-                                valueAsNumber: true,
-                              }
-                            )}
-                            className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="3"
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Interest + Principal Plan Extras */}
-                    {planType === "interestPlusPrincipal" && (
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">
-                            Principal Repayment %
-                          </label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            {...register(
-                              "investment.customPlan.principalRepaymentPercent",
-                              {
-                                valueAsNumber: true,
-                              }
-                            )}
-                            className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="10 for 10%"
-                          />
-                        </div>
-                        {watchPaymentFreq === "others" && (
-                          <>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700">
-                                Interest Payout Date *
-                              </label>
-                              <input
-                                type="date"
-                                {...register(
-                                  "investment.customPlan.interestPayoutDate"
-                                )}
-                                className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700">
-                                Principal Payout Date *
-                              </label>
-                              <input
-                                type="date"
-                                {...register(
-                                  "investment.customPlan.principalPayoutDate"
-                                )}
-                                className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                              />
-                            </div>
-                          </>
+                        {errors.investment?.customPlan?.interestRate && (
+                          <p className="mt-1 text-sm text-red-600">
+                            {errors.investment.customPlan.interestRate.message}
+                          </p>
                         )}
                       </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Interest Type *
+                        </label>
+                        <select
+                          {...register("investment.customPlan.interestType", {
+                            required: "Interest type is required",
+                          })}
+                          className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="">Select...</option>
+                          <option value="flat">Flat Interest</option>
+                          <option value="reducing">Reducing Balance</option>
+                        </select>
+                        {errors.investment?.customPlan?.interestType && (
+                          <p className="mt-1 text-sm text-red-600">
+                            {errors.investment.customPlan.interestType.message}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Tenure (months) *
+                        </label>
+                        <input
+                          type="number"
+                          {...register("investment.customPlan.tenure", {
+                            required: "Tenure is required",
+                            min: {
+                              value: 1,
+                              message: "Tenure must be at least 1 month",
+                            },
+                            max: {
+                              value: 240,
+                              message: "Tenure cannot exceed 240 months",
+                            },
+                          })}
+                          className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="12"
+                        />
+                        {errors.investment?.customPlan?.tenure && (
+                          <p className="mt-1 text-sm text-red-600">
+                            {errors.investment.customPlan.tenure.message}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Risk Level
+                        </label>
+                        <select
+                          {...register("investment.customPlan.riskLevel")}
+                          className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="low">Low Risk</option>
+                          <option value="medium">Medium Risk</option>
+                          <option value="high">High Risk</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Minimum Investment (₹) *
+                        </label>
+                        <input
+                          type="number"
+                          {...register("investment.customPlan.minInvestment", {
+                            required: "Minimum investment is required",
+                            min: {
+                              value: 1000,
+                              message:
+                                "Minimum investment must be at least ₹1,000",
+                            },
+                          })}
+                          className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="50000"
+                        />
+                        {errors.investment?.customPlan?.minInvestment && (
+                          <p className="mt-1 text-sm text-red-600">
+                            {errors.investment.customPlan.minInvestment.message}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Maximum Investment (₹) *
+                        </label>
+                        <input
+                          type="number"
+                          {...register("investment.customPlan.maxInvestment", {
+                            required: "Maximum investment is required",
+                            min: {
+                              value: 1000,
+                              message:
+                                "Maximum investment must be at least ₹1,000",
+                            },
+                            validate: (value) => {
+                              const min = getValues(
+                                "investment.customPlan.minInvestment"
+                              );
+                              return (
+                                !min ||
+                                value >= min ||
+                                "Maximum must be greater than or equal to minimum"
+                              );
+                            },
+                          })}
+                          className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="1000000"
+                        />
+                        {errors.investment?.customPlan?.maxInvestment && (
+                          <p className="mt-1 text-sm text-red-600">
+                            {errors.investment.customPlan.maxInvestment.message}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="flex items-center">
+                          <input
+                            {...register("investment.customPlan.isActive")}
+                            type="checkbox"
+                            className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                          />
+                          <span className="ml-2 text-sm text-gray-700">
+                            Plan is Active
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Payment Type Selection */}
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-4">
+                        Payment Structure
+                      </h3>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Payment Type *
+                          </label>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <label className="relative cursor-pointer">
+                              <input
+                                {...register(
+                                  "investment.customPlan.paymentType"
+                                )}
+                                type="radio"
+                                value="interest"
+                                className="sr-only"
+                              />
+                              <div
+                                className={`p-4 border-2 rounded-lg ${
+                                  watchPaymentType === "interest"
+                                    ? "border-blue-500 bg-blue-50"
+                                    : "border-gray-300"
+                                }`}
+                              >
+                                <div className="flex items-center">
+                                  <div
+                                    className={`w-4 h-4 rounded-full border-2 mr-3 ${
+                                      watchPaymentType === "interest"
+                                        ? "border-blue-500 bg-blue-500"
+                                        : "border-gray-300"
+                                    }`}
+                                  >
+                                    {watchPaymentType === "interest" && (
+                                      <div className="w-2 h-2 bg-white rounded-full mx-auto mt-1"></div>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <div className="font-medium text-gray-900">
+                                      Interest Payment
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      Regular interest payments with principal
+                                      at maturity
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </label>
+
+                            <label className="relative cursor-pointer">
+                              <input
+                                {...register(
+                                  "investment.customPlan.paymentType"
+                                )}
+                                type="radio"
+                                value="interestWithPrincipal"
+                                className="sr-only"
+                              />
+                              <div
+                                className={`p-4 border-2 rounded-lg ${
+                                  watchPaymentType === "interestWithPrincipal"
+                                    ? "border-blue-500 bg-blue-50"
+                                    : "border-gray-300"
+                                }`}
+                              >
+                                <div className="flex items-center">
+                                  <div
+                                    className={`w-4 h-4 rounded-full border-2 mr-3 ${
+                                      watchPaymentType ===
+                                      "interestWithPrincipal"
+                                        ? "border-blue-500 bg-blue-500"
+                                        : "border-gray-300"
+                                    }`}
+                                  >
+                                    {watchPaymentType ===
+                                      "interestWithPrincipal" && (
+                                      <div className="w-2 h-2 bg-white rounded-full mx-auto mt-1"></div>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <div className="font-medium text-gray-900">
+                                      Interest + Principal
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      Combined interest and principal payments
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Payment Configuration */}
+                    {watch("investment.customPlan.paymentType") ===
+                      "interest" && (
+                      <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 mt-4">
+                        <h4 className="text-md font-medium text-blue-900 mb-4 flex items-center">
+                          Interest Payment Configuration
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700">
+                              Interest Payment Frequency *
+                            </label>
+                            <select
+                              {...register(
+                                "investment.customPlan.interestPayment.interestFrequency",
+                                { required: "Interest frequency is required" }
+                              )}
+                              className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                              <option value="">Select...</option>
+                              <option value="monthly">Monthly</option>
+                              <option value="quarterly">Quarterly</option>
+                              <option value="half-yearly">Half-Yearly</option>
+                              <option value="yearly">Yearly</option>
+                              <option value="others">Others (Custom)</option>
+                            </select>
+                            {errors.investment?.customPlan?.interestPayment
+                              ?.interestFrequency && (
+                              <p className="mt-1 text-sm text-red-600">
+                                {
+                                  errors.investment.customPlan.interestPayment
+                                    .interestFrequency.message
+                                }
+                              </p>
+                            )}
+                          </div>
+                          {watch(
+                            "investment.customPlan.interestPayment.interestFrequency"
+                          ) === "others" && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700">
+                                Custom Interest Start Date
+                              </label>
+                              <input
+                                {...register(
+                                  "investment.customPlan.interestPayment.interestStartDate"
+                                )}
+                                type="date"
+                                className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                            </div>
+                          )}
+                          <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Principal Repayment Option *
+                            </label>
+                            <div className="space-y-3">
+                              <label className="flex items-center">
+                                <input
+                                  {...register(
+                                    "investment.customPlan.interestPayment.principalRepaymentOption"
+                                  )}
+                                  type="radio"
+                                  value="fixed"
+                                  className="mr-2"
+                                />
+                                <span className="text-sm">
+                                  Fixed Tenure – Principal repaid at maturity
+                                </span>
+                              </label>
+                              <label className="flex items-center">
+                                <input
+                                  {...register(
+                                    "investment.customPlan.interestPayment.principalRepaymentOption"
+                                  )}
+                                  type="radio"
+                                  value="flexible"
+                                  className="mr-2"
+                                />
+                                <span className="text-sm">
+                                  Flexible Withdrawal – Early withdrawal allowed
+                                </span>
+                              </label>
+                            </div>
+                          </div>
+                          {watch(
+                            "investment.customPlan.interestPayment.principalRepaymentOption"
+                          ) === "flexible" && (
+                            <>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700">
+                                  Withdrawal Allowed After (%)
+                                </label>
+                                <input
+                                  {...register(
+                                    "investment.customPlan.interestPayment.withdrawalAfterPercentage"
+                                  )}
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                                  placeholder="50"
+                                />
+                                <p className="mt-1 text-xs text-gray-500">
+                                  % of tenure after which withdrawal is allowed
+                                </p>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700">
+                                  Principal Settlement Term (Months)
+                                </label>
+                                <input
+                                  {...register(
+                                    "investment.customPlan.interestPayment.principalSettlementTerm"
+                                  )}
+                                  type="number"
+                                  min="1"
+                                  className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                                  placeholder="12"
+                                />
+                                <p className="mt-1 text-xs text-gray-500">
+                                  Maximum months for principal settlement
+                                </p>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     )}
+
+                    {watch("investment.customPlan.paymentType") ===
+                      "interestWithPrincipal" && (
+                      <div className="bg-green-50 p-6 rounded-lg border border-green-200 mt-4">
+                        <h4 className="text-md font-medium text-green-900 mb-4 flex items-center">
+                          Interest + Principal Payment Configuration
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700">
+                              Principal Repayment Percentage (%) *
+                            </label>
+                            <input
+                              {...register(
+                                "investment.customPlan.interestWithPrincipalPayment.principalRepaymentPercentage",
+                                {
+                                  required:
+                                    "Principal repayment percentage is required",
+                                  min: {
+                                    value: 0,
+                                    message: "Percentage cannot be negative",
+                                  },
+                                  max: {
+                                    value: 100,
+                                    message: "Percentage cannot exceed 100%",
+                                  },
+                                }
+                              )}
+                              type="number"
+                              step="0.01"
+                              className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="10"
+                            />
+                            {errors.investment?.customPlan
+                              ?.interestWithPrincipalPayment
+                              ?.principalRepaymentPercentage && (
+                              <p className="mt-1 text-sm text-red-600">
+                                {
+                                  errors.investment.customPlan
+                                    .interestWithPrincipalPayment
+                                    .principalRepaymentPercentage.message
+                                }
+                              </p>
+                            )}
+                            <p className="mt-1 text-xs text-gray-500">
+                              % of principal paid with each payment
+                            </p>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700">
+                              Payment Frequency *
+                            </label>
+                            <select
+                              {...register(
+                                "investment.customPlan.interestWithPrincipalPayment.paymentFrequency",
+                                {
+                                  required: "Payment frequency is required",
+                                }
+                              )}
+                              className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                              <option value="">Select...</option>
+                              <option value="monthly">Monthly</option>
+                              <option value="quarterly">Quarterly</option>
+                              <option value="half-yearly">Half-Yearly</option>
+                              <option value="yearly">Yearly</option>
+                              <option value="others">Others (Custom)</option>
+                            </select>
+                            {errors.investment?.customPlan
+                              ?.interestWithPrincipalPayment
+                              ?.paymentFrequency && (
+                              <p className="mt-1 text-sm text-red-600">
+                                {
+                                  errors.investment.customPlan
+                                    .interestWithPrincipalPayment
+                                    .paymentFrequency.message
+                                }
+                              </p>
+                            )}
+                          </div>
+                          {watch(
+                            "investment.customPlan.interestWithPrincipalPayment.paymentFrequency"
+                          ) === "others" && (
+                            <>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700">
+                                  Interest Payout Date
+                                </label>
+                                <input
+                                  {...register(
+                                    "investment.customPlan.interestWithPrincipalPayment.interestPayoutDate"
+                                  )}
+                                  type="date"
+                                  className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700">
+                                  Principal Payout Date
+                                </label>
+                                <input
+                                  {...register(
+                                    "investment.customPlan.interestWithPrincipalPayment.principalPayoutDate"
+                                  )}
+                                  type="date"
+                                  className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Features */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Features (comma-separated)
+                      </label>
+                      <textarea
+                        {...register("investment.customPlan.features")}
+                        rows={2}
+                        className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="High Returns, Monthly Payouts, Flexible Terms"
+                      />
+                      <p className="mt-1 text-sm text-gray-500">
+                        Enter features separated by commas
+                      </p>
+                    </div>
+
+                    {/* Plan Summary */}
+                    <div className="bg-gray-50 p-4 rounded-lg mt-4">
+                      <h4 className="text-sm font-medium text-gray-900 mb-3">
+                        Plan Summary
+                      </h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-600">Payment Type:</span>
+                          <div className="font-medium">
+                            {watch("investment.customPlan.paymentType") ===
+                            "interest"
+                              ? "Interest Only"
+                              : "Interest + Principal"}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Interest Rate:</span>
+                          <div className="font-medium">
+                            {watch("investment.customPlan.interestRate") || 0}%
+                            per month
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Tenure:</span>
+                          <div className="font-medium">
+                            {watch("investment.customPlan.tenure") || 0} months
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Risk Level:</span>
+                          <div className="font-medium capitalize">
+                            {watch("investment.customPlan.riskLevel")}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
+
+              {/* Selected Plan Details */}
+              {selectedPlan && (
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                  <h4 className="text-md font-medium text-green-900 mb-3">
+                    Selected Plan Details
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <span className="text-green-700">Interest Rate:</span>
+                      <div className="font-medium">
+                        {selectedPlan.interestRate}% per month
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-green-700">Interest Type:</span>
+                      <div className="font-medium capitalize">
+                        {selectedPlan.interestType}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-green-700">Tenure:</span>
+                      <div className="font-medium">
+                        {selectedPlan.tenure} months
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-green-700">Payment Type:</span>
+                      <div className="font-medium">
+                        {getPaymentTypeLabel(selectedPlan.paymentType)}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-green-700">Payment Frequency:</span>
+                      <div className="font-medium capitalize">
+                        {getPaymentFrequency(selectedPlan)}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-green-700">Risk Level:</span>
+                      <div className="font-medium capitalize">
+                        {selectedPlan.riskLevel}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Calculation Results */}
+              {selectedPlan && watchPrincipalAmount && (
+                <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                  <h4 className="text-md font-medium text-purple-900 mb-3 flex items-center">
+                    <Calculator className="h-5 w-5 mr-2" />
+                    Investment Calculation
+                    {calculating && (
+                      <LoadingSpinner size="sm" className="ml-2" />
+                    )}
+                  </h4>
+
+                  {calculationResult ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-white p-3 rounded">
+                        <div className="text-sm text-gray-600">
+                          Principal Amount
+                        </div>
+                        <div className="text-lg font-bold text-purple-600">
+                          {formatCurrency(calculationResult.principalAmount)}
+                        </div>
+                      </div>
+                      <div className="bg-white p-3 rounded">
+                        <div className="text-sm text-gray-600">
+                          Total Interest
+                        </div>
+                        <div className="text-lg font-bold text-green-600">
+                          {formatCurrency(
+                            calculationResult.calculations.totalInterest
+                          )}
+                        </div>
+                      </div>
+                      <div className="bg-white p-3 rounded">
+                        <div className="text-sm text-gray-600">
+                          Total Returns
+                        </div>
+                        <div className="text-lg font-bold text-blue-600">
+                          {formatCurrency(
+                            calculationResult.calculations.totalReturns
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2 text-sm text-purple-700">
+                      {calculating ? (
+                        <>
+                          <Info className="h-4 w-4" />
+                          <span>Calculating returns...</span>
+                        </>
+                      ) : (
+                        <>
+                          <AlertTriangle className="h-4 w-4" />
+                          <span>
+                            Enter a valid amount within the plan range to see
+                            calculations
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Maturity Information */}
+              {selectedPlan && watch("investment.investmentDate") && (
+                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                  <h4 className="text-md font-medium text-yellow-900 mb-3 flex items-center">
+                    <Calendar className="h-5 w-5 mr-2" />
+                    Investment Timeline
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <span className="text-yellow-700">Start Date:</span>
+                      <div className="font-medium">
+                        {new Date(
+                          watch("investment.investmentDate")
+                        ).toLocaleDateString("en-IN")}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-yellow-700">Maturity Date:</span>
+                      <div className="font-medium">
+                        {(() => {
+                          const startDate = new Date(
+                            watch("investment.investmentDate")
+                          );
+                          const maturityDate = new Date(startDate);
+                          maturityDate.setMonth(
+                            maturityDate.getMonth() + selectedPlan.tenure
+                          );
+                          return maturityDate.toLocaleDateString("en-IN");
+                        })()}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-yellow-700">Duration:</span>
+                      <div className="font-medium">
+                        {selectedPlan.tenure} months
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Validation Status */}
+              {selectedPlan && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-gray-900 mb-2">
+                    Validation Status
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-sm">
+                    {/* <div className="flex items-center">
+                      {watchInvestor ? (
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                      )}
+                      <span className="ml-2">Investor Selected</span>
+                    </div> */}
+                    <div className="flex items-center">
+                      {selectedPlan ? (
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                      )}
+                      <span className="ml-2">Plan Selected</span>
+                    </div>
+                    <div className="flex items-center">
+                      {watchPrincipalAmount &&
+                      selectedPlan &&
+                      watchPrincipalAmount >= selectedPlan.minInvestment &&
+                      watchPrincipalAmount <= selectedPlan.maxInvestment ? (
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                      )}
+                      <span className="ml-2">Valid Amount</span>
+                    </div>
+                    <div className="flex items-center">
+                      {calculationResult ? (
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                      )}
+                      <span className="ml-2">Calculations Ready</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -2138,7 +2883,7 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
                   watchAcctConfirm &&
                   watchAcct !== watchAcctConfirm)
             )}
-            onClick={handleSubmit(onSubmit)}
+            onClick={handleSubmit(handleInvestorSubmit)}
           >
             {investor ? "Update Investor" : "Create Investor"}
           </Button>
