@@ -438,7 +438,7 @@ const ComprehensiveInvestmentsView = ({
                 </div>
               </div>
 
-              <div className="flex items-center space-x-3">
+              {/* <div className="flex items-center space-x-3">
                 {canManage && !isEditing && (
                   <Button
                     variant="outline"
@@ -472,7 +472,7 @@ const ComprehensiveInvestmentsView = ({
                     </Button>
                   </>
                 )}
-              </div>
+              </div> */}
             </div>
           </motion.div>
         </div>

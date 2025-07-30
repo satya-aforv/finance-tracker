@@ -36,6 +36,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import DocumentManager from "../../components/investments/DocumentManager";
 import InvestmentPaymentForm from "../investments/InvestmentPaymentForm";
 import CreateRemarksForm from "../../components/common/CreateRemarksForm";
+import { PaginatedSchedule } from "../../components/common/Paggination";
 
 const Button = ({
   children,
@@ -237,6 +238,8 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
       completed: "bg-blue-100 text-blue-800",
       closed: "bg-gray-100 text-gray-800",
       defaulted: "bg-red-100 text-red-800",
+      overdue: "bg-red-100 text-red-800",
+      pending: "bg-red-100 text-red-800",
     };
 
     return (
@@ -320,7 +323,7 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-4">
             <div className="flex items-center space-x-4">
               {onBack && (
@@ -352,7 +355,7 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Quick Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <motion.div
@@ -440,7 +443,7 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
         </div>
 
         {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-sm border">
+        <div className="bg-white rounded-lg shadow-sm border w-full">
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-8 px-6">
               {[
@@ -735,9 +738,9 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() =>
-                                    toggleExpand(investment.investmentId)
-                                  }
+                                  onClick={() => {
+                                    toggleExpand(investment.investmentId);
+                                  }}
                                 >
                                   <Eye className="h-4 w-4 mr-2" />
                                   {isExpanded ? "Hide Details" : "View Details"}
@@ -747,11 +750,14 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
 
                             {/* Animated expand/collapse section */}
                             <div
-                              className={`transition-all duration-500 overflow-hidden mt-2 ${
+                              className={`transition-[max-height,opacity,margin] duration-200 overflow-hidden mt-2 ${
                                 isExpanded
-                                  ? "max-h-[500px] opacity-100"
-                                  : "max-h-0 opacity-0"
+                                  ? "opacity-100 max-h-[1000px] mb-4"
+                                  : "opacity-0 max-h-0 mb-0"
                               }`}
+                              style={{
+                                visibility: isExpanded ? "visible" : "hidden",
+                              }}
                             >
                               <div className="pt-4 border-t text-sm text-gray-700">
                                 {/* Tabs */}
@@ -817,125 +823,129 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                                             </div>
                                           </div>
 
-                                          <div className="overflow-x-auto bg-white rounded-lg border border-gray-200">
-                                            <table className="min-w-full divide-y divide-gray-200">
-                                              <thead className="bg-gray-50">
-                                                <tr>
-                                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Month
-                                                  </th>
-                                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Due Date
-                                                  </th>
-                                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Interest
-                                                  </th>
-                                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Principal
-                                                  </th>
-                                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Total Amount
-                                                  </th>
-                                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Paid Amount
-                                                  </th>
-                                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Balance
-                                                  </th>
-                                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Status
-                                                  </th>
-                                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Remarks
-                                                  </th>
-                                                </tr>
-                                              </thead>
-                                              <tbody className="bg-white divide-y divide-gray-200">
-                                                {investment?.schedule.map(
-                                                  (payment, index) => (
-                                                    <tr
-                                                      key={index}
-                                                      className="hover:bg-gray-50 transition-colors"
-                                                    >
-                                                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                        #{payment.month}
-                                                      </td>
-                                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {formatDate(
-                                                          payment.dueDate
-                                                        )}
-                                                      </td>
-                                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {formatCurrency(
-                                                          payment.interestAmount
-                                                        )}
-                                                      </td>
-                                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {formatCurrency(
-                                                          payment.principalAmount
-                                                        )}
-                                                      </td>
-                                                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                        {formatCurrency(
-                                                          payment.totalAmount
-                                                        )}
-                                                      </td>
-                                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
-                                                        {formatCurrency(
+                                          {isExpanded ? (
+                                            <div className="bg-white rounded-lg border border-gray-200  overflow-x-auto">
+                                              <PaginatedSchedule
+                                                schedule={
+                                                  investment.schedule || []
+                                                }
+                                                rowsPerPage={6}
+                                                tableHead={
+                                                  <thead className="bg-gray-50">
+                                                    <tr>
+                                                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Month
+                                                      </th>
+                                                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Due Date
+                                                      </th>
+                                                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Interest
+                                                      </th>
+                                                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Principal
+                                                      </th>
+                                                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Total Amount
+                                                      </th>
+                                                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Paid Amount
+                                                      </th>
+                                                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Balance
+                                                      </th>
+                                                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Status
+                                                      </th>
+                                                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Remarks
+                                                      </th>
+                                                    </tr>
+                                                  </thead>
+                                                }
+                                                renderRow={(payment, idx) => (
+                                                  <tr
+                                                    key={idx}
+                                                    className="hover:bg-gray-50 transition-colors"
+                                                  >
+                                                    <td className="px-4 py-4 whitespace-nowrap text-xs font-xs text-gray-900">
+                                                      #{payment.month}
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-xs font-xs text-gray-900">
+                                                      {formatDate(
+                                                        payment.dueDate
+                                                      )}
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-xs font-xs text-gray-900">
+                                                      {formatCurrency(
+                                                        payment.interestAmount
+                                                      )}
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-xs font-xs text-gray-900">
+                                                      {formatCurrency(
+                                                        payment.principalAmount
+                                                      )}
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-xs font-xs text-gray-900">
+                                                      {formatCurrency(
+                                                        payment.totalAmount
+                                                      )}
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-xs text-green-600 font-xs">
+                                                      {formatCurrency(
+                                                        payment.paidAmount
+                                                      )}
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-xs text-red-600 font-xs">
+                                                      {formatCurrency(
+                                                        payment.totalAmount -
                                                           payment.paidAmount
-                                                        )}
-                                                      </td>
-                                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-medium">
-                                                        {formatCurrency(
-                                                          payment.totalAmount -
-                                                            payment.paidAmount
-                                                        )}
-                                                      </td>
-                                                      <td className="px-6 py-4 whitespace-nowrap">
-                                                        {getStatusBadge(
-                                                          payment.status
-                                                        )}
-                                                      </td>
-                                                      <td className="px-6 w-20 py-4 justify-space-between whitespace-nowrap">
-                                                        <div className="flex items-center space-x-2">
-                                                          <span title="Add Remarks">
-                                                            <MessageCircleCode
+                                                      )}
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap">
+                                                      {getStatusBadge(
+                                                        payment.status
+                                                      )}
+                                                    </td>
+                                                    <td className="px-4 w-20 py-4 justify-space-between whitespace-nowrap">
+                                                      <div className="flex items-center space-x-2">
+                                                        <span title="Add Remarks">
+                                                          <MessageCircleCode
+                                                            onClick={() => {
+                                                              setPaymentSchedule(
+                                                                payment
+                                                              );
+                                                              setShowRemarksForm(
+                                                                true
+                                                              );
+                                                            }}
+                                                            className="h-5 w-5 text-blue-600 cursor-pointer"
+                                                          />
+                                                        </span>
+
+                                                        {payment?.status ===
+                                                          "overdue" && (
+                                                          <span title="Record Payment">
+                                                            <CreditCard
                                                               onClick={() => {
                                                                 setPaymentSchedule(
                                                                   payment
                                                                 );
-                                                                setShowRemarksForm(
+                                                                setShowPaymentSchedule(
                                                                   true
                                                                 );
                                                               }}
-                                                              className="h-5 w-5 text-blue-600 cursor-pointer"
+                                                              className="h-5 w-5 text-green-600 cursor-pointer ml-2"
                                                             />
                                                           </span>
-
-                                                          {payment?.status ===
-                                                            "overdue" && (
-                                                            <span title="Record Payment">
-                                                              <CreditCard
-                                                                onClick={() => {
-                                                                  setPaymentSchedule(
-                                                                    payment
-                                                                  );
-                                                                  setShowPaymentSchedule(
-                                                                    true
-                                                                  );
-                                                                }}
-                                                                className="h-5 w-5 text-green-600 cursor-pointer ml-2"
-                                                              />
-                                                            </span>
-                                                          )}
-                                                        </div>
-                                                      </td>
-                                                    </tr>
-                                                  )
+                                                        )}
+                                                      </div>
+                                                    </td>
+                                                  </tr>
                                                 )}
-                                              </tbody>
-                                            </table>
-                                          </div>
+                                              />
+                                            </div>
+                                          ) : null}
                                         </motion.div>
                                       )}
 
