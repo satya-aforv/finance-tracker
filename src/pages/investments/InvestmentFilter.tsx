@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
+const INVESTMENT_FILTERS_STORAGE_KEY = "investmentFilters";
 export interface InvestmentFilterValues {
   investmentId: string;
   createdDate: string;
@@ -29,34 +30,49 @@ const InvestmentAdvancedFilter: React.FC<InvestmentFilterProps> = ({
   onCancel,
   onReset,
 }) => {
-  const [filters, setFilters] = useState({
-    investmentId: "",
-    createdDate: "",
-    maturityDate: "",
-    investorName: "",
-    planName: "",
-    rateType: "",
-    investmentMin: "",
-    investmentMax: "",
-    expectedReturnMin: "",
-    expectedReturnMax: "",
-    progressMin: "",
-    progressMax: "",
-    durationMin: "",
-    durationMax: "",
-    status: "",
-  });
+  const getInitialFilters = (): InvestmentFilterValues => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(INVESTMENT_FILTERS_STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    }
+    return {
+      investmentId: "",
+      createdDate: "",
+      maturityDate: "",
+      investorName: "",
+      planName: "",
+      rateType: "",
+      investmentMin: "",
+      investmentMax: "",
+      expectedReturnMin: "",
+      expectedReturnMax: "",
+      progressMin: "",
+      progressMax: "",
+      durationMin: "",
+      durationMax: "",
+      status: "",
+    };
+  };
 
-  const handleChange = (field: string, value: any) => {
+  const [filters, setFilters] =
+    useState<InvestmentFilterValues>(getInitialFilters);
+
+  useEffect(() => {
+    localStorage.setItem(
+      INVESTMENT_FILTERS_STORAGE_KEY,
+      JSON.stringify(filters)
+    );
+  }, [filters]);
+
+  const handleChange = (field: keyof InvestmentFilterValues, value: any) => {
     setFilters((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleApply = () => {
     onFilterChange(filters);
-    setTimeout(() => {
-      onCancel();
-    }, 500);
+    onCancel();
   };
+
   const handleReset = () => {
     const resetFilters = {
       investmentId: "",
@@ -76,9 +92,8 @@ const InvestmentAdvancedFilter: React.FC<InvestmentFilterProps> = ({
       status: "",
     };
     setFilters(resetFilters);
-    setTimeout(() => {
-      onCancel();
-    }, 500);
+    localStorage.removeItem(INVESTMENT_FILTERS_STORAGE_KEY);
+    onCancel();
     onReset();
   };
 

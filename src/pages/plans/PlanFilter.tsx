@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+const PLAN_FILTERS_STORAGE_KEY = "plansFilters";
 
 export interface PlanFilterValues {
   planNameOrId: string;
@@ -23,27 +24,40 @@ const PlanFilter: React.FC<PlanFilterProps> = ({
   onCancel,
   onReset,
 }) => {
-  const [filters, setFilters] = useState<PlanFilterValues>({
-    planNameOrId: "",
-    paymentStructure: "",
-    minTerm: "",
-    maxTerm: "",
-    minInvestment: "",
-    maxInvestment: "",
-    riskLevel: "",
-    status: "",
-    validation: "",
-  });
+  const getInitialPlanFilters = (): PlanFilterValues => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(PLAN_FILTERS_STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    }
+    return {
+      planNameOrId: "",
+      paymentStructure: "",
+      minTerm: "",
+      maxTerm: "",
+      minInvestment: "",
+      maxInvestment: "",
+      riskLevel: "",
+      status: "",
+      validation: "",
+    };
+  };
+  const [filters, setFilters] = useState<PlanFilterValues>(
+    getInitialPlanFilters()
+  );
 
   const handleChange = (field: keyof PlanFilterValues, value: string) => {
     setFilters((prev) => ({ ...prev, [field]: value }));
   };
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(PLAN_FILTERS_STORAGE_KEY, JSON.stringify(filters));
+    }
+  }, [filters]);
+
   const handleApply = () => {
     onFilterChange(filters);
-    setTimeout(() => {
-      onCancel();
-    }, 500);
+    onCancel();
   };
 
   const handleReset = () => {
@@ -59,9 +73,8 @@ const PlanFilter: React.FC<PlanFilterProps> = ({
       validation: "",
     };
     setFilters(resetFilters);
-    setTimeout(() => {
-      onCancel();
-    }, 500);
+    localStorage.removeItem(PLAN_FILTERS_STORAGE_KEY);
+    onCancel();
     onFilterChange(resetFilters);
     if (onReset) onReset();
   };

@@ -108,7 +108,7 @@ const InvestorsPage: React.FC = () => {
     } finally {
       setTimeout(() => {
         setLoading(false);
-      }, 1000);
+      }, 200);
     }
   }, [
     currentPage,

@@ -23,10 +23,38 @@ import PlanForm from "./PlanForm";
 import PlanCalculator from "./PlanCalculator";
 import PlanFilter, { PlanFilterValues } from "./PlanFilter";
 
+const SEARCH_STORAGE_KEY = "plansSearchTerm";
+const PLAN_FILTERS_STORAGE_KEY = "plansFilters";
+
 const PlansPage: React.FC = () => {
+  const getInitialSearchTerm = () => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem(SEARCH_STORAGE_KEY) || "";
+    }
+    return "";
+  };
+
+  const getInitialPlanFilters = (): PlanFilterValues => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(PLAN_FILTERS_STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    }
+    return {
+      planNameOrId: "",
+      paymentStructure: "",
+      minTerm: "",
+      maxTerm: "",
+      minInvestment: "",
+      maxInvestment: "",
+      riskLevel: "",
+      status: "",
+      validation: "",
+    };
+  };
+
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(getInitialSearchTerm());
   const [paymentTypeFilter, setPaymentTypeFilter] = useState("");
   const [interestTypeFilter, setInterestTypeFilter] = useState("");
   const [activeFilter, setActiveFilter] = useState("");
@@ -38,17 +66,49 @@ const PlansPage: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [showFliterOptions, setShowFilterOptions] = useState(false);
 
+  const [planFilters, setPlanFilters] = useState<PlanFilterValues>(
+    getInitialPlanFilters()
+  );
+
   const fetchPlans = async () => {
     try {
       setLoading(true);
-      const response = await plansService.getPlans({
+      const params: any = {
         page: currentPage,
         limit: 10,
         search: searchTerm,
         paymentType: paymentTypeFilter,
         interestType: interestTypeFilter,
         isActive: activeFilter,
-      });
+      };
+
+      // Add filter params from planFilters
+      if (planFilters.planNameOrId) params.search = planFilters.planNameOrId;
+      if (planFilters.paymentStructure) {
+        // Map UI value to backend value if needed
+        params.paymentType =
+          planFilters.paymentStructure === "interest-only"
+            ? "interest"
+            : planFilters.paymentStructure === "emi"
+            ? "interestWithPrincipal"
+            : "";
+      }
+      if (planFilters.minTerm) params.minTenure = planFilters.minTerm;
+      if (planFilters.maxTerm) params.maxTenure = planFilters.maxTerm;
+      if (planFilters.minInvestment)
+        params.minInvestment = planFilters.minInvestment;
+      if (planFilters.maxInvestment)
+        params.maxInvestment = planFilters.maxInvestment;
+      if (planFilters.riskLevel) params.riskLevel = planFilters.riskLevel;
+      if (planFilters.status) {
+        params.isActive =
+          planFilters.status === "active"
+            ? "true"
+            : planFilters.status === "inactive"
+            ? "false"
+            : "";
+      }
+      const response = await plansService.getPlans(params);
 
       setPlans(response.data || []);
       if (response.pagination) {
@@ -57,7 +117,9 @@ const PlansPage: React.FC = () => {
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to fetch plans");
     } finally {
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+      }, 200);
     }
   };
 
@@ -69,7 +131,23 @@ const PlansPage: React.FC = () => {
     paymentTypeFilter,
     interestTypeFilter,
     activeFilter,
+    planFilters,
   ]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(SEARCH_STORAGE_KEY, searchTerm);
+    }
+  }, [searchTerm]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        PLAN_FILTERS_STORAGE_KEY,
+        JSON.stringify(planFilters)
+      );
+    }
+  }, [planFilters]);
 
   const handleCreatePlan = async (data: any) => {
     try {
@@ -83,8 +161,26 @@ const PlansPage: React.FC = () => {
   };
 
   const handleFilterChange = (filters: PlanFilterValues) => {
-    console.log("Apply filters:", filters);
-    // Apply filtering logic here for your investor list
+    setPlanFilters(filters);
+    setCurrentPage(1);
+    setShowFilterOptions(false);
+  };
+
+  const handleFilterReset = () => {
+    const resetFilters: PlanFilterValues = {
+      planNameOrId: "",
+      paymentStructure: "",
+      minTerm: "",
+      maxTerm: "",
+      minInvestment: "",
+      maxInvestment: "",
+      riskLevel: "",
+      status: "",
+      validation: "",
+    };
+    setPlanFilters(resetFilters);
+    setCurrentPage(1);
+    setShowFilterOptions(false);
   };
 
   const handleEditPlan = async (data: any) => {
@@ -552,6 +648,7 @@ const PlansPage: React.FC = () => {
       >
         <PlanFilter
           onFilterChange={handleFilterChange}
+          onReset={handleFilterReset}
           onCancel={() => setShowFilterOptions(false)}
         />
       </Modal>

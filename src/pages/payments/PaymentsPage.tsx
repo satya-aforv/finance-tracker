@@ -18,10 +18,27 @@ import { useAuth } from "../../contexts/AuthContext";
 import toast from "react-hot-toast";
 import PaymentForm from "./PaymentForm";
 import PaymentsFilter, { PaymentsFilterValues } from "./PaymentsFilter";
-import InvestmentPaymentForm from "../investments/InvestmentPaymentForm";
 import PaymentRecordForm from "./PaymentRecordForm";
 
+const PAYMENT_FILTERS_STORAGE_KEY = "paymentFilters";
+
 const PaymentsPage: React.FC = () => {
+  const getInitialPaymentFilters = () => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(PAYMENT_FILTERS_STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    }
+    return {
+      paymentId: "",
+      investor: "",
+      investmentId: "",
+      amountMin: "",
+      amountMax: "",
+      method: "",
+      status: "",
+    };
+  };
+
   const { user } = useAuth();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,17 +51,32 @@ const PaymentsPage: React.FC = () => {
   const [paymentSchedule, setPaymentSchedule] = useState(null);
   const [showPaymentSchedule, setShowPaymentSchedule] = useState(false);
 
+  const [paymentFilters, setPaymentFilters] = useState(
+    getInitialPaymentFilters()
+  );
+
   const canManage = user?.role === "admin" || user?.role === "finance_manager";
 
   const fetchPayments = async () => {
     try {
       setLoading(true);
-      const response = await paymentsService.getPayments({
+      const params: any = {
         page: currentPage,
         limit: 10,
         search: searchTerm,
         status: statusFilter,
-      });
+      };
+
+      if (paymentFilters.paymentId) params.search = paymentFilters.paymentId;
+      if (paymentFilters.investor) params.investor = paymentFilters.investor;
+      if (paymentFilters.investmentId)
+        params.investmentId = paymentFilters.investmentId;
+      if (paymentFilters.amountMin) params.amountMin = paymentFilters.amountMin;
+      if (paymentFilters.amountMax) params.amountMax = paymentFilters.amountMax;
+      if (paymentFilters.method) params.method = paymentFilters.method;
+      if (paymentFilters.status) params.status = paymentFilters.status;
+
+      const response = await paymentsService.getPayments(params);
 
       setPayments(response.data || []);
       if (response.pagination) {
@@ -53,13 +85,15 @@ const PaymentsPage: React.FC = () => {
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to fetch payments");
     } finally {
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+      }, 200);
     }
   };
 
   useEffect(() => {
     fetchPayments();
-  }, [currentPage, searchTerm, statusFilter]);
+  }, [currentPage, searchTerm, statusFilter, paymentFilters]);
 
   const handleCreatePayment = async (data: any) => {
     try {
@@ -73,9 +107,26 @@ const PaymentsPage: React.FC = () => {
   };
 
   const handleFilterChange = (filters: PaymentsFilterValues) => {
-    console.log("Apply filters:", filters);
-    // Apply filtering logic here for your investor list
+    setPaymentFilters(filters);
+    setCurrentPage(1);
+    setShowFilterOptions(false);
   };
+
+  const handleFilterReset = () => {
+    const resetFilters: PaymentsFilterValues = {
+      paymentId: "",
+      investor: "",
+      investmentId: "",
+      amountMin: "",
+      amountMax: "",
+      method: "",
+      status: "",
+    };
+    setPaymentFilters(resetFilters);
+    setCurrentPage(1);
+    setShowFilterOptions(false);
+  };
+
   const handleRecordSubmit = async (data: any) => {
     try {
       // await paymentsService.recordPayment(data);
@@ -411,6 +462,7 @@ const PaymentsPage: React.FC = () => {
       >
         <PaymentsFilter
           onFilterChange={handleFilterChange}
+          onReset={handleFilterReset}
           onCancel={() => setShowFilterOptions(false)}
         />
       </Modal>

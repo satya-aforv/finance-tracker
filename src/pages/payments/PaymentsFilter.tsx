@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+
+const PAYMENT_FILTERS_STORAGE_KEY = "paymentFilters";
 
 const paymentMethods = ["UPI", "CHEQUE", "BANK TRANSFER"];
 const paymentStatuses = ["Completed", "Pending", "Failed"];
@@ -23,43 +25,56 @@ const PaymentsFilter: React.FC<PaymentsFilterProps> = ({
   onCancel,
   onReset,
 }) => {
-  const [filters, setFilters] = useState<PaymentsFilterValues>({
-    paymentId: "",
-    investor: "",
-    investmentId: "",
-    amountMin: "",
-    amountMax: "",
-    method: "",
-    status: "",
-  });
+  const getInitialPaymentFilters = (): PaymentsFilterValues => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(PAYMENT_FILTERS_STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    }
+    return {
+      paymentId: "",
+      investor: "",
+      investmentId: "",
+      amountMin: "",
+      amountMax: "",
+      method: "",
+      status: "",
+    };
+  };
+  const [filters, setFilters] = useState<PaymentsFilterValues>(
+    getInitialPaymentFilters()
+  );
 
   const handleChange = (field: keyof PaymentsFilterValues, value: string) => {
     setFilters((prev) => ({ ...prev, [field]: value }));
   };
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        PAYMENT_FILTERS_STORAGE_KEY,
+        JSON.stringify(filters)
+      );
+    }
+  }, [filters]);
+
   const handleApply = () => {
     onFilterChange(filters);
-    setTimeout(() => {
-      onCancel();
-    }, 500);
+    onCancel();
   };
 
   const handleReset = () => {
     const resetFilters = {
-      planNameOrId: "",
-      paymentStructure: "",
-      minTerm: "",
-      maxTerm: "",
-      minInvestment: "",
-      maxInvestment: "",
-      riskLevel: "",
+      paymentId: "",
+      investor: "",
+      investmentId: "",
+      amountMin: "",
+      amountMax: "",
+      method: "",
       status: "",
-      validation: "",
     };
     setFilters(resetFilters);
-    setTimeout(() => {
-      onCancel();
-    }, 500);
+    localStorage.removeItem(PAYMENT_FILTERS_STORAGE_KEY);
+    onCancel();
     onFilterChange(resetFilters);
     if (onReset) onReset();
   };
@@ -76,7 +91,7 @@ const PaymentsFilter: React.FC<PaymentsFilterProps> = ({
             type="text"
             name="paymentId"
             value={filters.paymentId}
-            onChange={handleChange}
+            onChange={(e) => handleChange("paymentId", e.target.value)}
             placeholder="PAY00000005"
             className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm text-sm"
           />
@@ -91,7 +106,7 @@ const PaymentsFilter: React.FC<PaymentsFilterProps> = ({
             type="text"
             name="investmentId"
             value={filters.investmentId}
-            onChange={handleChange}
+            onChange={(e) => handleChange("investmentId", e.target.value)}
             placeholder="INVST000004"
             className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm text-sm"
           />
@@ -106,7 +121,7 @@ const PaymentsFilter: React.FC<PaymentsFilterProps> = ({
             type="text"
             name="investor"
             value={filters.investor}
-            onChange={handleChange}
+            onChange={(e) => handleChange("investor", e.target.value)}
             placeholder="Sunita Reddy"
             className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm text-sm"
           />
@@ -122,7 +137,7 @@ const PaymentsFilter: React.FC<PaymentsFilterProps> = ({
               type="number"
               name="amountMin"
               value={filters.amountMin}
-              onChange={handleChange}
+              onChange={(e) => handleChange("amountMin", e.target.value)}
               placeholder="Min"
               className="w-1/2 border border-gray-300 rounded-md px-3 py-2 shadow-sm text-sm"
             />
@@ -130,7 +145,7 @@ const PaymentsFilter: React.FC<PaymentsFilterProps> = ({
               type="number"
               name="amountMax"
               value={filters.amountMax}
-              onChange={handleChange}
+              onChange={(e) => handleChange("amountMax", e.target.value)}
               placeholder="Max"
               className="w-1/2 border border-gray-300 rounded-md px-3 py-2 shadow-sm text-sm"
             />
@@ -145,7 +160,7 @@ const PaymentsFilter: React.FC<PaymentsFilterProps> = ({
           <select
             name="method"
             value={filters.method}
-            onChange={handleChange}
+            onChange={(e) => handleChange("method", e.target.value)}
             className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm text-sm"
           >
             <option value="">All</option>
@@ -165,7 +180,7 @@ const PaymentsFilter: React.FC<PaymentsFilterProps> = ({
           <select
             name="status"
             value={filters.status}
-            onChange={handleChange}
+            onChange={(e) => handleChange("status", e.target.value)}
             className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm text-sm"
           >
             <option value="">All</option>

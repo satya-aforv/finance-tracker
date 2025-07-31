@@ -23,9 +23,37 @@ import toast from "react-hot-toast";
 import InvestmentForm from "./InvestmentForm";
 import InvestmentDetails from "./InvestmentDetails";
 import ComprehensiveInvestmentsView from "./ComprehensiveInvestmentsView";
-import InvestmentAdvancedFilter from "./InvestmentFilter";
+import InvestmentAdvancedFilter, {
+  InvestmentFilterValues,
+} from "./InvestmentFilter";
+
+const INVESTMENT_FILTERS_STORAGE_KEY = "investmentFilters";
 
 const InvestmentsPage: React.FC = () => {
+  const getInitialFilters = (): InvestmentFilterValues => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(INVESTMENT_FILTERS_STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    }
+    return {
+      investmentId: "",
+      createdDate: "",
+      maturityDate: "",
+      investorName: "",
+      planName: "",
+      rateType: "",
+      investmentMin: "",
+      investmentMax: "",
+      expectedReturnMin: "",
+      expectedReturnMax: "",
+      progressMin: "",
+      progressMax: "",
+      durationMin: "",
+      durationMax: "",
+      status: "",
+    };
+  };
+
   const { user } = useAuth();
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +69,9 @@ const InvestmentsPage: React.FC = () => {
   const [currentView, setCurrentView] = useState<"list" | "comprehensive">(
     "list"
   );
+  const [filters, setFilters] = useState<InvestmentFilterValues>(
+    getInitialFilters()
+  );
   const [showFliterOptions, setShowFilterOptions] = useState(false);
   const [selectedInvestmentId, setSelectedInvestmentId] = useState<
     string | null
@@ -50,12 +81,35 @@ const InvestmentsPage: React.FC = () => {
   const fetchInvestments = async () => {
     try {
       setLoading(true);
-      const response = await investmentsService.getInvestments({
+      const params: any = {
         page: currentPage,
         limit: 10,
         search: searchTerm,
         status: statusFilter,
-      });
+        // Add advanced filters:
+        investmentId: filters.investmentId,
+        createdDate: filters.createdDate,
+        maturityDate: filters.maturityDate,
+        investorName: filters.investorName,
+        planName: filters.planName,
+        rateType: filters.rateType,
+        investmentMin: filters.investmentMin,
+        investmentMax: filters.investmentMax,
+        expectedReturnMin: filters.expectedReturnMin,
+        expectedReturnMax: filters.expectedReturnMax,
+        progressMin: filters.progressMin,
+        progressMax: filters.progressMax,
+        durationMin: filters.durationMin,
+        durationMax: filters.durationMax,
+        // status is already handled above
+      };
+      // Remove empty values
+      Object.keys(params).forEach(
+        (key) =>
+          (params[key] === "" || params[key] == null) && delete params[key]
+      );
+
+      const response = await investmentsService.getInvestments(params);
 
       setInvestments(response.data || []);
       if (response.pagination) {
@@ -66,13 +120,22 @@ const InvestmentsPage: React.FC = () => {
         error.response?.data?.message || "Failed to fetch investments"
       );
     } finally {
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+      }, 200);
     }
   };
 
   useEffect(() => {
     fetchInvestments();
-  }, [currentPage, searchTerm, statusFilter]);
+  }, [currentPage, searchTerm, statusFilter, filters]);
+
+  useEffect(() => {
+    localStorage.setItem(
+      INVESTMENT_FILTERS_STORAGE_KEY,
+      JSON.stringify(filters)
+    );
+  }, [filters]);
 
   const handleCreateInvestment = async (data: any) => {
     try {
@@ -99,9 +162,17 @@ const InvestmentsPage: React.FC = () => {
     }
   };
 
-  const handleFilterChange = (filters: InvestorFilterValues) => {
-    console.log("Apply filters:", filters);
-    // Apply filtering logic here for your investor list
+  const handleFilterChange = (newFilters: InvestmentFilterValues) => {
+    setFilters(newFilters);
+    setCurrentPage(1);
+    setShowFilterOptions(false);
+  };
+
+  const handleFilterReset = () => {
+    const resetFilters = getInitialFilters();
+    setFilters(resetFilters);
+    setCurrentPage(1);
+    setShowFilterOptions(false);
   };
 
   const handleUpdateInvestment = (updatedInvestment: Investment) => {
@@ -351,17 +422,17 @@ const InvestmentsPage: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="space-y-1">
                             <div className="text-sm font-medium text-gray-900">
-                              {investment.investor.name}
+                              {investment?.investor?.name}
                             </div>
                             <div className="text-xs text-gray-500">
-                              ID: {investment.investor.investorId}
+                              ID: {investment?.investor?.investorId}
                             </div>
                             <div className="text-xs text-blue-600 font-medium">
-                              {investment.plan.name}
+                              {investment?.plan?.name}
                             </div>
                             <div className="text-xs text-gray-500">
-                              {investment.plan.interestRate}%{" "}
-                              {investment.plan.interestType}
+                              {investment?.plan?.interestRate}%{" "}
+                              {investment?.plan?.interestType}
                             </div>
                           </div>
                         </td>
@@ -369,18 +440,19 @@ const InvestmentsPage: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="space-y-1">
                             <div className="text-sm font-medium text-gray-900">
-                              {formatCurrency(investment.principalAmount)}
+                              {formatCurrency(investment?.principalAmount)}
                             </div>
                             <div className="text-xs text-green-600">
                               Expected:{" "}
-                              {formatCurrency(investment.totalExpectedReturns)}
+                              {formatCurrency(investment?.totalExpectedReturns)}
                             </div>
                             <div className="text-xs text-blue-600">
-                              Paid: {formatCurrency(investment.totalPaidAmount)}
+                              Paid:{" "}
+                              {formatCurrency(investment?.totalPaidAmount)}
                             </div>
                             <div className="text-xs text-orange-600">
                               Remaining:{" "}
-                              {formatCurrency(investment.remainingAmount)}
+                              {formatCurrency(investment?.remainingAmount)}
                             </div>
                           </div>
                         </td>
@@ -392,7 +464,7 @@ const InvestmentsPage: React.FC = () => {
                                 {progress}%
                               </span>
                               <span className="text-xs text-gray-500">
-                                {investment.tenure}m
+                                {investment?.tenure}m
                               </span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
@@ -403,20 +475,20 @@ const InvestmentsPage: React.FC = () => {
                             </div>
                             <div className="text-xs text-gray-500">
                               {
-                                investment.schedule.filter(
+                                investment?.schedule.filter(
                                   (s) => s.status === "paid"
                                 ).length
                               }{" "}
-                              of {investment.schedule.length} payments
+                              of {investment?.schedule?.length} payments
                             </div>
                           </div>
                         </td>
 
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="space-y-2">
-                            {getStatusBadge(investment.status)}
-                            {investment.schedule.some(
-                              (s) => s.status === "overdue"
+                            {getStatusBadge(investment?.status)}
+                            {investment?.schedule.some(
+                              (s) => s?.status === "overdue"
                             ) && (
                               <div className="text-xs text-red-600 font-medium">
                                 Overdue payments
@@ -430,7 +502,7 @@ const InvestmentsPage: React.FC = () => {
                             <button
                               onClick={() => {
                                 handleViewComprehensive(
-                                  investment._id,
+                                  investment?._id,
                                   investment
                                 );
                               }}
@@ -547,6 +619,7 @@ const InvestmentsPage: React.FC = () => {
       >
         <InvestmentAdvancedFilter
           onFilterChange={handleFilterChange}
+          onReset={handleFilterReset}
           onCancel={() => setShowFilterOptions(false)}
         />
       </Modal>
