@@ -8,7 +8,7 @@ export interface User {
   _id: string;
   name: string;
   email: string;
-  role: 'admin' | 'finance_manager' | 'investor';
+  role: "admin" | "finance_manager" | "investor";
   phone?: string;
   avatar?: string;
   isActive: boolean;
@@ -46,11 +46,21 @@ export interface AuthResponse {
 // ================================
 
 export interface InvestorAddress {
-  street?: string;
-  city?: string;
-  state?: string;
-  pincode?: string;
-  country: string;
+  present: {
+    street: string;
+    city: string;
+    state: string;
+    pincode: string;
+    country: string;
+  };
+  permanent: {
+    street: string;
+    city: string;
+    state: string;
+    pincode: string;
+    country: string;
+  };
+  sameAsPresent: boolean;
 }
 
 export interface InvestorKYC {
@@ -68,7 +78,7 @@ export interface InvestorKYC {
     bankStatement?: string;
     signature?: string;
   };
-  verificationStatus: 'pending' | 'verified' | 'rejected';
+  verificationStatus: "pending" | "verified" | "rejected";
   verifiedAt?: string;
   verifiedBy?: string;
 }
@@ -77,10 +87,16 @@ export interface InvestorAgreement {
   fileName: string;
   filePath: string;
   uploadDate: string;
-  category: 'agreement' | 'kyc' | 'legal' | 'other';
+  category: "agreement" | "kyc" | "legal" | "other";
   description?: string;
 }
 
+export interface Nominee {
+  name: string;
+  email: string;
+  mobile: string;
+  relation: string;
+}
 export interface Investor {
   _id: string;
   investorId: string;
@@ -93,11 +109,12 @@ export interface Investor {
   agreements?: InvestorAgreement[];
   totalInvestment: number;
   activeInvestments: number;
+  nominee: Nominee;
   totalReturns: number;
-  status: 'active' | 'inactive' | 'blocked';
-  riskProfile: 'conservative' | 'moderate' | 'aggressive';
-  investmentExperience: 'beginner' | 'intermediate' | 'expert';
-  preferredContactMethod: 'email' | 'phone' | 'sms';
+  status: "active" | "inactive" | "blocked";
+  riskProfile: "conservative" | "moderate" | "aggressive";
+  investmentExperience: "beginner" | "intermediate" | "expert";
+  preferredContactMethod: "email" | "phone" | "sms";
   notes?: string;
   tags: string[];
   lastContactDate?: string;
@@ -115,9 +132,14 @@ export interface Investor {
 export interface InterestPaymentConfig {
   dateOfInvestment: string;
   amountInvested: number;
-  interestFrequency: 'monthly' | 'quarterly' | 'half-yearly' | 'yearly' | 'others';
+  interestFrequency:
+    | "monthly"
+    | "quarterly"
+    | "half-yearly"
+    | "yearly"
+    | "others";
   interestStartDate?: string;
-  principalRepaymentOption: 'fixed' | 'flexible';
+  principalRepaymentOption: "fixed" | "flexible";
   withdrawalAfterPercentage?: number;
   principalSettlementTerm?: number;
 }
@@ -126,7 +148,12 @@ export interface InterestWithPrincipalPaymentConfig {
   dateOfInvestment: string;
   investedAmount: number;
   principalRepaymentPercentage: number;
-  paymentFrequency: 'monthly' | 'quarterly' | 'half-yearly' | 'yearly' | 'others';
+  paymentFrequency:
+    | "monthly"
+    | "quarterly"
+    | "half-yearly"
+    | "yearly"
+    | "others";
   interestPayoutDate?: string;
   principalPayoutDate?: string;
 }
@@ -136,26 +163,26 @@ export interface Plan {
   planId: string;
   name: string;
   description?: string;
-  
+
   // Basic Plan Configuration
   interestRate: number;
-  interestType: 'flat' | 'reducing';
+  interestType: "flat" | "reducing";
   tenure: number;
   minInvestment: number;
   maxInvestment: number;
-  
+
   // Payment Type Selection (matches backend)
-  paymentType: 'interest' | 'interestWithPrincipal';
-  
+  paymentType: "interest" | "interestWithPrincipal";
+
   // Interest Payment Configuration
   interestPayment?: InterestPaymentConfig;
-  
+
   // Interest with Principal Payment Configuration
   interestWithPrincipalPayment?: InterestWithPrincipalPaymentConfig;
-  
+
   isActive: boolean;
   features?: string[];
-  riskLevel: 'low' | 'medium' | 'high';
+  riskLevel: "low" | "medium" | "high";
   totalInvestors: number;
   totalInvestment: number;
   createdBy: string;
@@ -174,14 +201,20 @@ export interface PaymentSchedule {
   principalAmount: number;
   totalAmount: number;
   remainingPrincipal: number;
-  status: 'pending' | 'paid' | 'overdue' | 'partial';
+  status: "pending" | "paid" | "overdue" | "partial";
   paidAmount: number;
   paidDate?: string;
 }
 
 export interface InvestmentDocument {
   _id: string;
-  category: 'agreement' | 'kyc' | 'payment_proof' | 'communication' | 'legal' | 'other';
+  category:
+    | "agreement"
+    | "kyc"
+    | "payment_proof"
+    | "communication"
+    | "legal"
+    | "other";
   fileName: string;
   originalName: string;
   filePath: string;
@@ -200,7 +233,14 @@ export interface InvestmentDocument {
 export interface TimelineEntry {
   _id: string;
   date: string;
-  type: 'investment_created' | 'payment_received' | 'payment_overdue' | 'document_uploaded' | 'status_changed' | 'note_added' | 'schedule_updated';
+  type:
+    | "investment_created"
+    | "payment_received"
+    | "payment_overdue"
+    | "document_uploaded"
+    | "status_changed"
+    | "note_added"
+    | "schedule_updated";
   description: string;
   amount: number;
   performedBy: {
@@ -232,24 +272,24 @@ export interface Investment {
     _id: string;
     planId: string;
     name: string;
-    paymentType: 'interest' | 'interestWithPrincipal';
+    paymentType: "interest" | "interestWithPrincipal";
     interestType: string;
     interestRate: number;
     tenure: number;
   };
-  
+
   // Basic Investment Details
   principalAmount: number;
   investmentDate: string;
   maturityDate: string;
-  status: 'active' | 'completed' | 'closed' | 'defaulted';
-  
+  status: "active" | "completed" | "closed" | "defaulted";
+
   // Financial Details (copied from plan for historical record)
   interestRate: number;
-  interestType: 'flat' | 'reducing';
+  interestType: "flat" | "reducing";
   tenure: number;
-  paymentType: 'interest' | 'interestWithPrincipal';
-  
+  paymentType: "interest" | "interestWithPrincipal";
+
   // Calculated Fields
   totalExpectedReturns: number;
   totalInterestExpected: number;
@@ -257,21 +297,21 @@ export interface Investment {
   totalInterestPaid: number;
   totalPrincipalPaid: number;
   remainingAmount: number;
-  
+
   // Payment Schedule
   schedule: PaymentSchedule[];
-  
+
   // Document management
   documents: InvestmentDocument[];
-  
+
   // Timeline/Activity log
   timeline: TimelineEntry[];
-  
+
   notes?: string;
-  
+
   // Risk assessment
   riskAssessment?: RiskAssessment;
-  
+
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -283,7 +323,12 @@ export interface Investment {
 
 export interface PaymentDocument {
   _id: string;
-  category: 'receipt' | 'bank_statement' | 'cheque_copy' | 'upi_screenshot' | 'other';
+  category:
+    | "receipt"
+    | "bank_statement"
+    | "cheque_copy"
+    | "upi_screenshot"
+    | "other";
   fileName: string;
   originalName: string;
   filePath: string;
@@ -299,7 +344,13 @@ export interface PaymentDocument {
 }
 
 export interface PaymentAuditEntry {
-  action: 'created' | 'updated' | 'verified' | 'document_added' | 'document_removed' | 'status_changed';
+  action:
+    | "created"
+    | "updated"
+    | "verified"
+    | "document_added"
+    | "document_removed"
+    | "status_changed";
   performedBy: {
     _id: string;
     name: string;
@@ -329,26 +380,26 @@ export interface Payment {
   scheduleMonth: number;
   amount: number;
   paymentDate: string;
-  paymentMethod: 'cash' | 'cheque' | 'bank_transfer' | 'upi' | 'card' | 'other';
+  paymentMethod: "cash" | "cheque" | "bank_transfer" | "upi" | "card" | "other";
   referenceNumber?: string;
-  status: 'pending' | 'completed' | 'failed' | 'cancelled' | 'overdue';
-  type: 'interest' | 'principal' | 'mixed' | 'penalty' | 'bonus';
+  status: "pending" | "completed" | "failed" | "cancelled" | "overdue";
+  type: "interest" | "principal" | "mixed" | "penalty" | "bonus";
   interestAmount: number;
   principalAmount: number;
   penaltyAmount: number;
   bonusAmount: number;
   notes?: string;
-  
+
   // Enhanced document support - multiple documents per payment
   documents: PaymentDocument[];
-  
+
   // Legacy receipt field for backward compatibility
   receipt?: {
     fileName: string;
     filePath: string;
     uploadDate: string;
   };
-  
+
   processedBy: {
     _id: string;
     name: string;
@@ -360,7 +411,7 @@ export interface Payment {
     email: string;
   };
   verifiedAt?: string;
-  
+
   // Additional tracking fields
   lastModifiedBy?: {
     _id: string;
@@ -368,10 +419,10 @@ export interface Payment {
     email: string;
   };
   lastModifiedAt?: string;
-  
+
   // Audit trail
   auditLog: PaymentAuditEntry[];
-  
+
   createdAt: string;
   updatedAt: string;
 }
@@ -393,15 +444,20 @@ export interface PaymentFormData {
   scheduleMonth: number;
   amount: number;
   paymentDate: string;
-  paymentMethod: 'cash' | 'cheque' | 'bank_transfer' | 'upi' | 'card' | 'other';
+  paymentMethod: "cash" | "cheque" | "bank_transfer" | "upi" | "card" | "other";
   referenceNumber?: string;
-  type?: 'interest' | 'principal' | 'mixed' | 'penalty' | 'bonus';
+  type?: "interest" | "principal" | "mixed" | "penalty" | "bonus";
   interestAmount?: number;
   principalAmount?: number;
   penaltyAmount?: number;
   bonusAmount?: number;
   notes?: string;
-  documentCategory?: 'receipt' | 'bank_statement' | 'cheque_copy' | 'upi_screenshot' | 'other';
+  documentCategory?:
+    | "receipt"
+    | "bank_statement"
+    | "cheque_copy"
+    | "upi_screenshot"
+    | "other";
   documentDescription?: string;
 }
 
@@ -512,8 +568,8 @@ export interface CompanySettings {
 export interface FinancialSettings {
   defaultCurrency: string;
   currencySymbol: string;
-  financialYearStart: 'January' | 'April' | 'July' | 'October';
-  interestCalculationMethod: 'daily' | 'monthly' | 'yearly';
+  financialYearStart: "January" | "April" | "July" | "October";
+  interestCalculationMethod: "daily" | "monthly" | "yearly";
   defaultLateFee: number;
   gracePeriodDays: number;
 }
@@ -527,7 +583,7 @@ export interface NotificationSettings {
   };
   overdueAlerts: {
     enabled: boolean;
-    frequency: 'daily' | 'weekly' | 'monthly';
+    frequency: "daily" | "weekly" | "monthly";
   };
   investmentMaturity: {
     enabled: boolean;
@@ -552,7 +608,7 @@ export interface SecuritySettings {
 
 export interface BackupSettings {
   enabled: boolean;
-  frequency: 'daily' | 'weekly' | 'monthly';
+  frequency: "daily" | "weekly" | "monthly";
   retentionDays: number;
 }
 
@@ -600,7 +656,7 @@ export interface SearchParams {
   };
   sort?: {
     field: string;
-    order: 'asc' | 'desc';
+    order: "asc" | "desc";
   };
   page?: number;
   limit?: number;
@@ -705,7 +761,17 @@ export interface ValidationRule {
 export interface FormField {
   name: string;
   label: string;
-  type: 'text' | 'email' | 'password' | 'number' | 'date' | 'select' | 'textarea' | 'file' | 'checkbox' | 'radio';
+  type:
+    | "text"
+    | "email"
+    | "password"
+    | "number"
+    | "date"
+    | "select"
+    | "textarea"
+    | "file"
+    | "checkbox"
+    | "radio";
   validation?: ValidationRule;
   options?: Array<{ value: string; label: string }>;
   placeholder?: string;
@@ -799,7 +865,7 @@ export interface TableColumn<T = any> {
   key: keyof T;
   title: string;
   width?: string | number;
-  align?: 'left' | 'center' | 'right';
+  align?: "left" | "center" | "right";
   sortable?: boolean;
   filterable?: boolean;
   render?: (value: any, record: T, index: number) => React.ReactNode;
@@ -851,11 +917,12 @@ export type DeepPartial<T> = {
 
 export type RequiredFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
 
-export type OptionalFields<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+export type OptionalFields<T, K extends keyof T> = Omit<T, K> &
+  Partial<Pick<T, K>>;
 
-export type CreateType<T> = Omit<T, '_id' | 'createdAt' | 'updatedAt'>;
+export type CreateType<T> = Omit<T, "_id" | "createdAt" | "updatedAt">;
 
-export type UpdateType<T> = Partial<Omit<T, '_id' | 'createdAt' | 'updatedAt'>>;
+export type UpdateType<T> = Partial<Omit<T, "_id" | "createdAt" | "updatedAt">>;
 
 // ================================
 // DEFAULT EXPORTS
@@ -872,5 +939,5 @@ export default {
   DashboardStats,
   InvestorStats,
   PaymentStats,
-  PlanStats
+  PlanStats,
 };

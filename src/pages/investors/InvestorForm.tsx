@@ -267,20 +267,20 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
           altPhone: investor.altPhone || "",
           address: {
             present: {
-              street: investor.address?.street || "",
-              city: investor.address?.city || "",
-              state: investor.address?.state || "",
-              pincode: investor.address?.pincode || "",
-              country: investor.address?.country || "India",
+              street: investor.address?.present?.street || "",
+              city: investor.address?.present?.city || "",
+              state: investor.address?.present?.state || "",
+              pincode: investor.address?.present?.pincode || "",
+              country: investor.address?.present?.country || "India",
             },
             permanent: {
-              street: investor?.address?.street || "",
-              city: investor?.address?.city || "",
-              state: investor?.address?.state || "",
-              pincode: investor?.address?.pincode || "",
-              country: investor?.address?.country || "India",
+              street: investor?.address?.permanent?.street || "",
+              city: investor?.address?.permanent?.city || "",
+              state: investor?.address?.permanent?.state || "",
+              pincode: investor?.address?.permanent?.pincode || "",
+              country: investor?.address?.permanent?.country || "India",
             },
-            sameAsPresent: true,
+            sameAsPresent: investor?.address?.sameAsPresent || false,
           },
           kyc: {
             panNumber: investor.kyc?.panNumber || "",
@@ -290,6 +290,8 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
               accountHolderName: investor.name || "",
               accountNumber: investor.kyc?.bankDetails?.accountNumber || "",
               ifscCode: investor.kyc?.bankDetails?.ifscCode || "",
+              confirmAccountNumber:
+                investor.kyc?.bankDetails?.accountNumber || "",
               branchName: investor.kyc?.bankDetails?.branchName || "",
               bankProofFile: undefined as unknown as FileList,
             },
@@ -303,10 +305,10 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
             temporaryPassword: false,
           },
           nominee: {
-            name: "",
-            email: "",
-            mobile: "",
-            relation: "",
+            name: investor?.nominee?.name || "",
+            email: investor?.nominee?.email || "",
+            mobile: investor?.nominee?.mobile || "",
+            relation: investor?.nominee?.relation || "",
           },
           referral: {
             name: "",
@@ -516,7 +518,6 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
   useEffect(() => {
     if (watchPlan) {
       const plan = plans.find((p) => p._id === watchPlan);
-      console.log(plan, "plan");
       setSelectedPlan(plan || null);
       // Clear calculation when plan changes
       setCalculationResult(null);
