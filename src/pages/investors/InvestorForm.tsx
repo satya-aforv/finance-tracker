@@ -120,7 +120,7 @@ export interface FormData {
       isActive: boolean;
       features: string[];
       riskLevel: "low" | "medium" | "high";
-
+      disbursementDate: string;
       // Payment Type Selection
       paymentType: "interest" | "interestWithPrincipal";
 
@@ -2438,6 +2438,18 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
                       <p className="mt-1 text-sm text-gray-500">
                         Enter features separated by commas
                       </p>
+                    </div>
+
+                    {/* Features */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Disbursement date
+                      </label>
+                      <input
+                        {...register("investment.customPlan.disbursementDate")}
+                        type="date"
+                        className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
                     </div>
 
                     {/* Plan Summary */}
