@@ -47,10 +47,10 @@ const Button = ({
   );
 };
 
-const CreateRemarksForm = ({
+const CreateRemarksFormPR = ({
   investmentId,
   investment,
-  paymentSchedule,
+  principalRequest,
   onSubmit,
   onCancel,
 }) => {
@@ -83,9 +83,10 @@ const CreateRemarksForm = ({
   }, [content, trigger]);
 
   useEffect(() => {
-    if (paymentSchedule) {
-      setComments(paymentSchedule.comments);
-      console.log(paymentSchedule?.comments, "paymentSchedule");
+    console.log(principalRequest, "principalRequest");
+    if (principalRequest) {
+      setComments(principalRequest.comments);
+      console.log(principalRequest?.comments, "principalRequest");
     }
   }, [investment]);
 
@@ -135,7 +136,6 @@ const CreateRemarksForm = ({
   };
 
   const handleReplySubmit = async (e, parentIndex) => {
-    e.preventDefault();
     if (!replyText.trim()) return;
 
     const newReply = {
@@ -158,15 +158,14 @@ const CreateRemarksForm = ({
     //   });
     // }
 
-    await investmentsService.replyComments(
+    await investmentsService.replyPRComments(
       investmentId,
-      paymentSchedule?._id,
+      principalRequest?._id,
       activeReplyId,
       formData
     );
 
     setActiveReplyId(null);
-
     setComments(updatedComments);
     setActiveReply(null);
     setReplyText("");
@@ -184,9 +183,9 @@ const CreateRemarksForm = ({
           formData.append("attachments", file);
         });
       }
-      await investmentsService.addRemark(
+      await investmentsService.addPRRemarks(
         investmentId,
-        paymentSchedule?._id,
+        principalRequest?._id,
         formData
       );
 
@@ -227,13 +226,17 @@ const CreateRemarksForm = ({
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
           <div className="flex items-center justify-between bg-gradient-to-r from-blue-600 to-blue-700 p-4 rounded shadow-sm">
             <p className="text-sm text-white">
-              Payment Due Date:{" "}
-              {paymentSchedule?.dueDate
-                ? formatDate(paymentSchedule.dueDate)
+              Payment Disbursment Date:{" "}
+              {principalRequest?.requestedDisbursementDate
+                ? formatDate(principalRequest.requestedDisbursementDate)
                 : "N/A"}
             </p>
             <p className="text-sm text-white">
-              Amount Due: {formatCurrency(paymentSchedule?.totalAmount)}
+              Amount Requested:{" "}
+              {formatCurrency(principalRequest?.requestedAmount)}
+            </p>
+            <p className="text-sm text-white">
+              Status: {principalRequest?.status}
             </p>
           </div>
           <div>
@@ -301,10 +304,7 @@ const CreateRemarksForm = ({
 
                         {/* Reply form */}
                         {activeReply === index && (
-                          <form
-                            onSubmit={(e) => handleReplySubmit(e, index)}
-                            className="mt-2 space-y-2"
-                          >
+                          <div className="mt-2 space-y-2">
                             <textarea
                               value={replyText}
                               onChange={(e) => {
@@ -320,18 +320,23 @@ const CreateRemarksForm = ({
                               <button
                                 type="button"
                                 className="text-xs text-gray-500 hover:underline"
-                                onClick={() => setActiveReply(null)}
+                                onClick={() => {
+                                  setActiveReply(null);
+                                }}
                               >
                                 Cancel
                               </button>
                               <button
-                                type="submit"
+                                type="button"
+                                onClick={(e) => {
+                                  handleReplySubmit(e, index);
+                                }}
                                 className="text-xs text-white bg-blue-600 px-3 py-1 rounded hover:bg-blue-700"
                               >
                                 Post
                               </button>
                             </div>
-                          </form>
+                          </div>
                         )}
 
                         {/* Replies */}
@@ -506,4 +511,4 @@ const CreateRemarksForm = ({
   );
 };
 
-export default CreateRemarksForm;
+export default CreateRemarksFormPR;

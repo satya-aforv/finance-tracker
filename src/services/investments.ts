@@ -40,6 +40,24 @@ export const investmentsService = {
     return api.get("/investments", { params });
   },
 
+  async add_principal_request(
+    id: string,
+    data: unknown
+  ): Promise<ApiResponse<unknown>> {
+    return api.post(`/investments/${id}/principal-request`, data);
+  },
+
+  async addPRRemarks(
+    id: string,
+    requestId: string,
+    data: unknown
+  ): Promise<ApiResponse<unknown>> {
+    return api.post(
+      `/investments/${id}/principal-request/${requestId}/remark`,
+      data
+    );
+  },
+
   async addRemark(
     id: string,
     scheduleId: string,
@@ -59,6 +77,18 @@ export const investmentsService = {
   ): Promise<ApiResponse<unknown>> {
     return api.put(
       `/investments/${id}/${scheduleId}/${commentId}/reply-comments`,
+      data
+    );
+  },
+
+  async replyPRComments(
+    id: string,
+    pr_id: string,
+    remarkId: string,
+    data: unknown
+  ): Promise<ApiResponse<unknown>> {
+    return api.post(
+      `/investments/${id}/principal-request/${pr_id}/remark/${remarkId}/reply`,
       data
     );
   },

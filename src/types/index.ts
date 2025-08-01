@@ -311,7 +311,7 @@ export interface Investment {
 
   // Risk assessment
   riskAssessment?: RiskAssessment;
-
+  principalRequest?: unknown;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
