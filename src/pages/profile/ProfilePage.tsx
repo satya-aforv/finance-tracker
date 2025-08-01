@@ -802,7 +802,7 @@ export default function UserProfile({
                                 transition={{ duration: 0.2 }}
                                 className="text-gray-900 py-2"
                               >
-                                {userData.address.present.country}
+                                {userData?.address?.present?.country || "N/A"}
                               </motion.p>
                             )}
                           </AnimatePresence>
