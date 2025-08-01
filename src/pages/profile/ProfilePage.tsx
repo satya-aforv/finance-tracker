@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -76,6 +76,12 @@ interface ValidationErrors {
   permanentCity?: string;
 }
 
+interface UserProfileProps {
+  userData?: UserData | null;
+  loading?: boolean;
+  error?: string;
+}
+
 const countries = [
   "India",
   "United States",
@@ -91,24 +97,26 @@ const countries = [
 
 const roles = ["investor", "admin", "user", "manager", "analyst", "consultant"];
 
-export default function ProfilePage() {
+export default function UserProfile({
+  userData: initialUserData = null,
+  loading = false,
+  error = null,
+}: UserProfileProps = {}) {
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState("personal-info");
   const [errors, setErrors] = useState<ValidationErrors>({});
   const { user } = useAuth();
 
   // Sample user data based on your payload
-  const [userData, setUserData] = useState<UserData>(null);
-
-  const [editData, setEditData] = useState<UserData>(userData);
-
-  useEffect(() => {
-    setUserData({
+  const [userData, setUserData] = useState<UserData | null>(
+    initialUserData || {
       ...user,
       bio: "Experienced investor with focus on technology startups and sustainable businesses. Passionate about supporting innovative entrepreneurs.",
       title: "Senior Investment Analyst",
-    });
-  }, [user, userData]);
+    }
+  );
+
+  const [editData, setEditData] = useState<UserData | null>(userData);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -123,31 +131,31 @@ export default function ProfilePage() {
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {};
 
-    if (!editData.name.trim()) {
+    if (!editData?.name?.trim()) {
       newErrors.name = "Name is required";
     }
 
-    if (!editData.email.trim()) {
+    if (!editData?.email?.trim()) {
       newErrors.email = "Email is required";
-    } else if (!validateEmail(editData.email)) {
+    } else if (editData?.email && !validateEmail(editData.email)) {
       newErrors.email = "Please enter a valid email address";
     }
 
-    if (!editData.phone.trim()) {
+    if (!editData?.phone?.trim()) {
       newErrors.phone = "Phone number is required";
-    } else if (!validatePhone(editData.phone)) {
+    } else if (editData?.phone && !validatePhone(editData.phone)) {
       newErrors.phone = "Please enter a valid phone number";
     }
 
-    if (editData.bio && editData.bio.length < 10) {
+    if (editData?.bio && editData.bio.length < 10) {
       newErrors.bio = "Bio must be at least 10 characters long";
     }
 
-    if (!editData.address.present.country) {
+    if (!editData?.address?.present?.country) {
       newErrors.presentCountry = "Present country is required";
     }
 
-    if (!editData.address.permanent.country) {
+    if (!editData?.address?.permanent?.country) {
       newErrors.permanentCountry = "Permanent country is required";
     }
 
@@ -156,20 +164,21 @@ export default function ProfilePage() {
   };
 
   const handleEdit = () => {
+    if (!userData) return;
     setIsEditing(true);
     setEditData({ ...userData });
     setErrors({});
   };
 
   const handleSave = () => {
-    if (validateForm()) {
-      setUserData({ ...editData, updatedAt: new Date().toISOString() });
-      setIsEditing(false);
-      setErrors({});
-    }
+    if (!editData || !validateForm()) return;
+    setUserData({ ...editData, updatedAt: new Date().toISOString() });
+    setIsEditing(false);
+    setErrors({});
   };
 
   const handleCancel = () => {
+    if (!userData) return;
     setIsEditing(false);
     setEditData({ ...userData });
     setErrors({});
@@ -177,6 +186,7 @@ export default function ProfilePage() {
 
   const handleInputChange = (field: string, value: string) => {
     setEditData((prev) => {
+      if (!prev) return prev;
       const keys = field.split(".");
       if (keys.length === 1) {
         return { ...prev, [field]: value };
@@ -231,6 +241,64 @@ export default function ProfilePage() {
     { id: "billing", label: "Billing", icon: CreditCard },
     { id: "activity", label: "Activity", icon: Activity },
   ];
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <X className="w-8 h-8 text-red-600" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Error Loading Profile
+          </h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()}>Try Again</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // No user data state
+  if (!userData) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <User className="w-8 h-8 text-gray-400" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            No Profile Found
+          </h2>
+          <p className="text-gray-600 mb-4">
+            We couldn't find any profile information. Please check if you're
+            logged in or try refreshing the page.
+          </p>
+          <div className="flex gap-2 justify-center">
+            <Button onClick={() => window.location.reload()}>
+              Refresh Page
+            </Button>
+            <Button variant="outline" onClick={() => window.history.back()}>
+              Go Back
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -442,7 +510,7 @@ export default function ProfilePage() {
                               transition={{ duration: 0.2 }}
                             >
                               <Input
-                                value={editData.name}
+                                value={editData?.name || ""}
                                 onChange={(e) =>
                                   handleInputChange("name", e.target.value)
                                 }
@@ -542,7 +610,7 @@ export default function ProfilePage() {
                             >
                               <Input
                                 type="email"
-                                value={editData.email}
+                                value={editData?.email || ""}
                                 onChange={(e) =>
                                   handleInputChange("email", e.target.value)
                                 }
@@ -594,7 +662,7 @@ export default function ProfilePage() {
                             >
                               <Input
                                 type="tel"
-                                value={editData.phone}
+                                value={editData?.phone || ""}
                                 onChange={(e) =>
                                   handleInputChange("phone", e.target.value)
                                 }
@@ -641,7 +709,7 @@ export default function ProfilePage() {
                               transition={{ duration: 0.2 }}
                             >
                               <Input
-                                value={editData.title || ""}
+                                value={editData?.title || ""}
                                 onChange={(e) =>
                                   handleInputChange("title", e.target.value)
                                 }
@@ -692,7 +760,7 @@ export default function ProfilePage() {
                                 transition={{ duration: 0.2 }}
                               >
                                 <Select
-                                  value={editData.address.present.country}
+                                  value={editData?.address?.present?.country}
                                   onValueChange={(value) =>
                                     handleInputChange(
                                       "address.present.country",
@@ -756,7 +824,9 @@ export default function ProfilePage() {
                                 transition={{ duration: 0.2 }}
                               >
                                 <Input
-                                  value={editData.address.present.state || ""}
+                                  value={
+                                    editData?.address?.present?.state || ""
+                                  }
                                   onChange={(e) =>
                                     handleInputChange(
                                       "address.present.state",
@@ -796,7 +866,7 @@ export default function ProfilePage() {
                                 transition={{ duration: 0.2 }}
                               >
                                 <Input
-                                  value={editData.address.present.city || ""}
+                                  value={editData?.address?.present?.city || ""}
                                   onChange={(e) =>
                                     handleInputChange(
                                       "address.present.city",
@@ -844,7 +914,7 @@ export default function ProfilePage() {
                                 transition={{ duration: 0.2 }}
                               >
                                 <Select
-                                  value={editData.address.permanent.country}
+                                  value={editData?.address?.permanent?.country}
                                   onValueChange={(value) =>
                                     handleInputChange(
                                       "address.permanent.country",
@@ -908,7 +978,9 @@ export default function ProfilePage() {
                                 transition={{ duration: 0.2 }}
                               >
                                 <Input
-                                  value={editData.address.permanent.state || ""}
+                                  value={
+                                    editData?.address?.permanent?.state || ""
+                                  }
                                   onChange={(e) =>
                                     handleInputChange(
                                       "address.permanent.state",
@@ -948,7 +1020,9 @@ export default function ProfilePage() {
                                 transition={{ duration: 0.2 }}
                               >
                                 <Input
-                                  value={editData.address.permanent.city || ""}
+                                  value={
+                                    editData?.address?.permanent?.city || ""
+                                  }
                                   onChange={(e) =>
                                     handleInputChange(
                                       "address.permanent.city",
@@ -992,7 +1066,7 @@ export default function ProfilePage() {
                           transition={{ duration: 0.2 }}
                         >
                           <Textarea
-                            value={editData.bio || ""}
+                            value={editData?.bio || ""}
                             onChange={(e) =>
                               handleInputChange("bio", e.target.value)
                             }
