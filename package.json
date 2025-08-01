@@ -15,6 +15,7 @@
     "install-all": "npm install && npm run install-backend"
   },
   "dependencies": {
+    "@radix-ui/react-select": "^2.2.5",
     "@radix-ui/react-slot": "^1.2.3",
     "axios": "^1.7.7",
     "class-variance-authority": "^0.7.1",
