@@ -389,154 +389,167 @@ const InvestmentsPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {investments.map((investment) => {
-                    const progress = getProgressPercentage(investment);
-                    const daysToMaturity = getDaysToMaturity(
-                      investment.maturityDate
-                    );
+                  {investments && investments?.length > 0 ? (
+                    investments.map((investment) => {
+                      const progress = getProgressPercentage(investment);
+                      const daysToMaturity = getDaysToMaturity(
+                        investment.maturityDate
+                      );
 
-                    return (
-                      <tr
-                        key={investment._id}
-                        className="hover:bg-gray-50 transition-colors"
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="space-y-1">
-                            <div className="text-sm font-medium text-blue-600">
-                              {investment.investmentId}
+                      return (
+                        <tr
+                          key={investment._id}
+                          className="hover:bg-gray-50 transition-colors"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="space-y-1">
+                              <div className="text-sm font-medium text-blue-600">
+                                {investment.investmentId}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                Created: {formatDate(investment.investmentDate)}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                Maturity: {formatDate(investment.maturityDate)}
+                                {daysToMaturity > 0 && (
+                                  <span className="ml-1 text-orange-600">
+                                    ({daysToMaturity} days left)
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                            <div className="text-xs text-gray-500">
-                              Created: {formatDate(investment.investmentDate)}
+                          </td>
+
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="space-y-1">
+                              <div className="text-sm font-medium text-gray-900">
+                                {investment?.investor?.name}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                ID: {investment?.investor?.investorId}
+                              </div>
+                              <div className="text-xs text-blue-600 font-medium">
+                                {investment?.plan?.name}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {investment?.plan?.interestRate}%{" "}
+                                {investment?.plan?.interestType}
+                              </div>
                             </div>
-                            <div className="text-xs text-gray-500">
-                              Maturity: {formatDate(investment.maturityDate)}
-                              {daysToMaturity > 0 && (
-                                <span className="ml-1 text-orange-600">
-                                  ({daysToMaturity} days left)
+                          </td>
+
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="space-y-1">
+                              <div className="text-sm font-medium text-gray-900">
+                                {formatCurrency(investment?.principalAmount)}
+                              </div>
+                              <div className="text-xs text-green-600">
+                                Expected:{" "}
+                                {formatCurrency(
+                                  investment?.totalExpectedReturns
+                                )}
+                              </div>
+                              <div className="text-xs text-blue-600">
+                                Paid:{" "}
+                                {formatCurrency(investment?.totalPaidAmount)}
+                              </div>
+                              <div className="text-xs text-orange-600">
+                                Remaining:{" "}
+                                {formatCurrency(investment?.remainingAmount)}
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-gray-700">
+                                  {progress}%
                                 </span>
+                                <span className="text-xs text-gray-500">
+                                  {investment?.tenure}m
+                                </span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div
+                                  className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-300"
+                                  style={{ width: `${progress}%` }}
+                                ></div>
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {
+                                  investment?.schedule.filter(
+                                    (s) => s.status === "paid"
+                                  ).length
+                                }{" "}
+                                of {investment?.schedule?.length} payments
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="space-y-2">
+                              {getStatusBadge(investment?.status)}
+                              {investment?.schedule.some(
+                                (s) => s?.status === "overdue"
+                              ) && (
+                                <div className="text-xs text-red-600 font-medium">
+                                  Overdue payments
+                                </div>
                               )}
                             </div>
-                          </div>
-                        </td>
+                          </td>
 
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="space-y-1">
-                            <div className="text-sm font-medium text-gray-900">
-                              {investment?.investor?.name}
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => {
+                                  handleViewComprehensive(
+                                    investment?._id,
+                                    investment
+                                  );
+                                }}
+                                className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="View Details"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleViewDetails(investment)}
+                                className="p-2 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-lg transition-colors"
+                                title="View Schedule"
+                              >
+                                <Calendar className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleViewDetails(investment)}
+                                className="p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded-lg transition-colors"
+                                title="View Documents"
+                              >
+                                <FileText className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleViewDetails(investment)}
+                                className="p-2 text-orange-600 hover:text-orange-900 hover:bg-orange-50 rounded-lg transition-colors"
+                                title="View Timeline"
+                              >
+                                <Clock className="h-4 w-4" />
+                              </button>
                             </div>
-                            <div className="text-xs text-gray-500">
-                              ID: {investment?.investor?.investorId}
-                            </div>
-                            <div className="text-xs text-blue-600 font-medium">
-                              {investment?.plan?.name}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {investment?.plan?.interestRate}%{" "}
-                              {investment?.plan?.interestType}
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="space-y-1">
-                            <div className="text-sm font-medium text-gray-900">
-                              {formatCurrency(investment?.principalAmount)}
-                            </div>
-                            <div className="text-xs text-green-600">
-                              Expected:{" "}
-                              {formatCurrency(investment?.totalExpectedReturns)}
-                            </div>
-                            <div className="text-xs text-blue-600">
-                              Paid:{" "}
-                              {formatCurrency(investment?.totalPaidAmount)}
-                            </div>
-                            <div className="text-xs text-orange-600">
-                              Remaining:{" "}
-                              {formatCurrency(investment?.remainingAmount)}
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-medium text-gray-700">
-                                {progress}%
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {investment?.tenure}m
-                              </span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div
-                                className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-300"
-                                style={{ width: `${progress}%` }}
-                              ></div>
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {
-                                investment?.schedule.filter(
-                                  (s) => s.status === "paid"
-                                ).length
-                              }{" "}
-                              of {investment?.schedule?.length} payments
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="space-y-2">
-                            {getStatusBadge(investment?.status)}
-                            {investment?.schedule.some(
-                              (s) => s?.status === "overdue"
-                            ) && (
-                              <div className="text-xs text-red-600 font-medium">
-                                Overdue payments
-                              </div>
-                            )}
-                          </div>
-                        </td>
-
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => {
-                                handleViewComprehensive(
-                                  investment?._id,
-                                  investment
-                                );
-                              }}
-                              className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition-colors"
-                              title="View Details"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleViewDetails(investment)}
-                              className="p-2 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-lg transition-colors"
-                              title="View Schedule"
-                            >
-                              <Calendar className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleViewDetails(investment)}
-                              className="p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded-lg transition-colors"
-                              title="View Documents"
-                            >
-                              <FileText className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleViewDetails(investment)}
-                              className="p-2 text-orange-600 hover:text-orange-900 hover:bg-orange-50 rounded-lg transition-colors"
-                              title="View Timeline"
-                            >
-                              <Clock className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr className="h-[200px]">
+                      <td
+                        colSpan={6}
+                        className="min-h-[300px] px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center"
+                      >
+                        <p className="text-gray-500">No data found</p>
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

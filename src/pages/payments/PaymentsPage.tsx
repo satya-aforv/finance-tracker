@@ -307,102 +307,116 @@ const PaymentsPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {payments.map((payment) => (
-                    <tr key={payment._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {payment.paymentId}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {formatDate(payment.paymentDate)}
-                          </div>
-                          <div className="text-xs text-gray-400">
-                            Month {payment.scheduleMonth}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {payment.investment.investmentId}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            Principal:{" "}
-                            {formatCurrency(payment.investment.principalAmount)}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {payment.investor.name}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {payment.investor.investorId}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {formatCurrency(payment.amount)}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            Interest: {formatCurrency(payment.interestAmount)}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            Principal: {formatCurrency(payment.principalAmount)}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="space-y-1">
-                          {getMethodBadge(payment.paymentMethod)}
-                          {payment.referenceNumber && (
-                            <div className="text-xs text-gray-500">
-                              Ref: {payment.referenceNumber}
+                  {payments && payments?.length > 0 ? (
+                    payments.map((payment) => (
+                      <tr key={payment._id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {payment.paymentId}
                             </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(payment.status)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <button
-                            className="text-blue-600 hover:text-blue-900"
-                            title="View Details"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                          {payment.receipt && (
-                            <button
-                              className="text-green-600 hover:text-green-900"
-                              title="Download Receipt"
-                            >
-                              <Download className="h-4 w-4" />
-                            </button>
-                          )}
-                          {(payment?.status === "overdue" ||
-                            payment?.status === "completed") &&
-                            user?.role != "investor" && (
-                              <span title="Record Payment">
-                                <CreditCard
-                                  onClick={() => {
-                                    setPaymentSchedule(payment);
-                                    setShowPaymentSchedule(true);
-                                    console.log(payment, "payment");
-                                  }}
-                                  className="h-5 w-5 text-green-600 cursor-pointer ml-2"
-                                />
-                              </span>
+                            <div className="text-sm text-gray-500">
+                              {formatDate(payment.paymentDate)}
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              Month {payment.scheduleMonth}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {payment.investment.investmentId}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              Principal:{" "}
+                              {formatCurrency(
+                                payment.investment.principalAmount
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {payment.investor.name}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {payment.investor.investorId}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {formatCurrency(payment.amount)}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              Interest: {formatCurrency(payment.interestAmount)}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              Principal:{" "}
+                              {formatCurrency(payment.principalAmount)}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="space-y-1">
+                            {getMethodBadge(payment.paymentMethod)}
+                            {payment.referenceNumber && (
+                              <div className="text-xs text-gray-500">
+                                Ref: {payment.referenceNumber}
+                              </div>
                             )}
-                        </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {getStatusBadge(payment.status)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex space-x-2">
+                            <button
+                              className="text-blue-600 hover:text-blue-900"
+                              title="View Details"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </button>
+                            {payment.receipt && (
+                              <button
+                                className="text-green-600 hover:text-green-900"
+                                title="Download Receipt"
+                              >
+                                <Download className="h-4 w-4" />
+                              </button>
+                            )}
+                            {(payment?.status === "overdue" ||
+                              payment?.status === "completed") &&
+                              user?.role != "investor" && (
+                                <span title="Record Payment">
+                                  <CreditCard
+                                    onClick={() => {
+                                      setPaymentSchedule(payment);
+                                      setShowPaymentSchedule(true);
+                                      console.log(payment, "payment");
+                                    }}
+                                    className="h-5 w-5 text-green-600 cursor-pointer ml-2"
+                                  />
+                                </span>
+                              )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr className="h-[200px]">
+                      <td
+                        colSpan={6}
+                        className="min-h-[300px] px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center"
+                      >
+                        <p className="text-gray-500">No data found</p>
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>

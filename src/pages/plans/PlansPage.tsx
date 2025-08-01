@@ -441,113 +441,124 @@ const PlansPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {plans.map((plan) => (
-                    <tr key={plan._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {plan.name}
+                  {plans && plans?.length > 0 ? (
+                    plans.map((plan) => (
+                      <tr key={plan._id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {plan.name}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {plan.planId}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1 max-w-xs truncate">
+                              {plan.description}
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-500">
-                            {plan.planId}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="space-y-1">
+                            {getPaymentTypeBadge(plan.paymentType)}
+                            <div className="text-sm text-gray-900">
+                              {plan.interestRate}% {plan.interestType}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {getPaymentFrequency(plan)} payments
+                            </div>
                           </div>
-                          <div className="text-xs text-gray-400 mt-1 max-w-xs truncate">
-                            {plan.description}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm text-gray-900">
+                              {plan.tenure} months
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {formatCurrency(plan.minInvestment)} -{" "}
+                              {formatCurrency(plan.maxInvestment)}
+                            </div>
+                            <div className="flex items-center space-x-1 mt-1">
+                              {getRiskBadge(plan.riskLevel)}
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="space-y-1">
-                          {getPaymentTypeBadge(plan.paymentType)}
-                          <div className="text-sm text-gray-900">
-                            {plan.interestRate}% {plan.interestType}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm text-gray-900">
+                              {plan.totalInvestors} investors
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {formatCurrency(plan.totalInvestment)}
+                            </div>
                           </div>
-                          <div className="text-xs text-gray-500">
-                            {getPaymentFrequency(plan)} payments
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="space-y-2">
+                            {getStatusBadge(plan.isActive)}
+                            <div className="flex items-center space-x-1">
+                              {getValidationStatus(plan) ? (
+                                <CheckCircle className="h-4 w-4 text-green-500" />
+                              ) : (
+                                <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                              )}
+                              <span className="text-xs text-gray-500">
+                                {getValidationStatus(plan)
+                                  ? "Valid"
+                                  : "Incomplete"}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm text-gray-900">
-                            {plan.tenure} months
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex space-x-1">
+                            <button
+                              onClick={() => {
+                                setSelectedPlan(plan);
+                                setShowCalculatorModal(true);
+                              }}
+                              className="p-2 text-green-600 hover:text-green-900 hover:bg-green-50 rounded transition-colors"
+                              title="Calculate Returns"
+                            >
+                              <Calculator className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleCopyPlan(plan)}
+                              className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded transition-colors"
+                              title="Copy Plan"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedPlan(plan);
+                                setShowEditModal(true);
+                              }}
+                              className="p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded transition-colors"
+                              title="Edit Plan"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeletePlan(plan)}
+                              className="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded transition-colors"
+                              title="Delete Plan"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
                           </div>
-                          <div className="text-sm text-gray-500">
-                            {formatCurrency(plan.minInvestment)} -{" "}
-                            {formatCurrency(plan.maxInvestment)}
-                          </div>
-                          <div className="flex items-center space-x-1 mt-1">
-                            {getRiskBadge(plan.riskLevel)}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm text-gray-900">
-                            {plan.totalInvestors} investors
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {formatCurrency(plan.totalInvestment)}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="space-y-2">
-                          {getStatusBadge(plan.isActive)}
-                          <div className="flex items-center space-x-1">
-                            {getValidationStatus(plan) ? (
-                              <CheckCircle className="h-4 w-4 text-green-500" />
-                            ) : (
-                              <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                            )}
-                            <span className="text-xs text-gray-500">
-                              {getValidationStatus(plan)
-                                ? "Valid"
-                                : "Incomplete"}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex space-x-1">
-                          <button
-                            onClick={() => {
-                              setSelectedPlan(plan);
-                              setShowCalculatorModal(true);
-                            }}
-                            className="p-2 text-green-600 hover:text-green-900 hover:bg-green-50 rounded transition-colors"
-                            title="Calculate Returns"
-                          >
-                            <Calculator className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleCopyPlan(plan)}
-                            className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded transition-colors"
-                            title="Copy Plan"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSelectedPlan(plan);
-                              setShowEditModal(true);
-                            }}
-                            className="p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded transition-colors"
-                            title="Edit Plan"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeletePlan(plan)}
-                            className="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded transition-colors"
-                            title="Delete Plan"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr className="h-[200px]">
+                      <td
+                        colSpan={6}
+                        className="min-h-[300px] px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center"
+                      >
+                        <p className="text-gray-500">No data found</p>
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
