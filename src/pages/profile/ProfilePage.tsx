@@ -1,6 +1,4 @@
-"use client";
-
-import { useState } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -304,7 +302,7 @@ export default function UserProfile({
     <div className="min-h-screen bg-gray-50">
       {/* Header with gradient background */}
       <motion.div
-        className="relative h-48 bg-gradient-to-r from-purple-500 to-pink-500"
+        className="relative h-48 bg-blue-600"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
