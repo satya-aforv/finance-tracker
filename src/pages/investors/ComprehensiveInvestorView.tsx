@@ -24,6 +24,7 @@ import {
   Clock,
   Users2Icon,
   MessageCircleCode,
+  MessageCircleOffIcon,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm, useWatch } from "react-hook-form";
@@ -37,6 +38,7 @@ import DocumentManager from "../../components/investments/DocumentManager";
 import InvestmentPaymentForm from "../investments/InvestmentPaymentForm";
 import CreateRemarksForm from "../../components/common/CreateRemarksForm";
 import { PaginatedSchedule } from "../../components/common/Paggination";
+import { Investment } from "../../types";
 
 const Button = ({
   children,
@@ -174,8 +176,19 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
           ]);
 
         setInvestor(investorResponse.data);
-        console.log(investorResponse?.data, "investmentsResponse");
-        setInvestments(investmentsResponse.data || []);
+        console.log(investorResponse?.data, "investorResponse");
+        console.log(
+          investorResponse?.data?.investments,
+          "investorResponse?.data?.investments"
+        );
+        const responseInvestMent = investmentsResponse?.data?.length
+          ? investmentsResponse.data // Check if array exists and has length
+          : investorResponse?.data?.investments?.length
+          ? investorResponse.data.investments
+          : [];
+        console.log(responseInvestMent, "investmentsResponse");
+        setInvestments(responseInvestMent);
+
         setPlans(plansResponse.data || []);
       } catch (error) {
         console.error("Error fetching investor data:", error);
@@ -806,8 +819,7 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
 
                                   <div className="p-6">
                                     {/* Schedule Tab */}
-                                    {investments &&
-                                      investments?.length > 0 &&
+                                    {investments && investments?.length > 0 ? (
                                       investmentActiveTab === "schedule" && (
                                         <motion.div
                                           initial={{ opacity: 0, x: 20 }}
@@ -950,7 +962,31 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                                             </div>
                                           ) : null}
                                         </motion.div>
-                                      )}
+                                      )
+                                    ) : (
+                                      <tr>
+                                        <td
+                                          colSpan={9}
+                                          className="h-12 px-6 py-6 text-center"
+                                        >
+                                          <motion.div
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                          >
+                                            <div className="min-w-full text-center py-4 text-gray-500">
+                                              <MessageCircleOffIcon className="mx-auto h-12 w-12 text-gray-400" />
+                                              <p className="mt-2 text-lg">
+                                                No payment schedule available.
+                                              </p>
+                                              <p className="text-sm">
+                                                Once payments are scheduled,
+                                                they will appear here.
+                                              </p>
+                                            </div>
+                                          </motion.div>
+                                        </td>
+                                      </tr>
+                                    )}
 
                                     {/* Timeline Tab */}
                                     {investments &&
@@ -1088,7 +1124,7 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
         isOpen={showRemarksForm}
         onClose={() => setShowRemarksForm(false)}
         title={`Add Remarks for ${investment?.investmentId}`}
-        size="md"
+        size="lg"
       >
         <CreateRemarksForm
           investmentId={investment?._id}

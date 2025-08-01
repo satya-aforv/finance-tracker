@@ -596,7 +596,7 @@ const InvestmentsPage: React.FC = () => {
           setSelectedInvestment(null);
         }}
         title="Investment Details"
-        size="xl"
+        size="xxl"
       >
         {selectedInvestment && (
           <InvestmentDetails

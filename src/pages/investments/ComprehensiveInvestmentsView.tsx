@@ -962,64 +962,90 @@ const ComprehensiveInvestmentsView = ({
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {investment?.schedule.map((payment, index) => (
-                        <tr
-                          key={index}
-                          className="hover:bg-gray-50 transition-colors"
-                        >
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            #{payment.month}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {formatDate(payment.dueDate)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {formatCurrency(payment.interestAmount)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {formatCurrency(payment.principalAmount)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {formatCurrency(payment.totalAmount)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
-                            {formatCurrency(payment.paidAmount)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-medium">
-                            {formatCurrency(
-                              payment.totalAmount - payment.paidAmount
-                            )}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {getStatusBadge(payment.status)}
-                          </td>
-                          <td className="px-6 w-20 py-4 justify-space-between whitespace-nowrap">
-                            <div className="flex items-center space-x-2">
-                              <span title="Add Remarks">
-                                <MessageCircleCode
-                                  onClick={() => {
-                                    setPaymentSchedule(payment);
-                                    setShowRemarksForm(true);
-                                  }}
-                                  className="h-5 w-5 text-blue-600 cursor-pointer"
-                                />
-                              </span>
-
-                              {payment?.status === "overdue" && (
-                                <span title="Record Payment">
-                                  <CreditCard
+                      {investment?.schedule &&
+                      investment?.schedule?.length > 0 ? (
+                        investment?.schedule.map((payment, index) => (
+                          <tr
+                            key={index}
+                            className="hover:bg-gray-50 transition-colors"
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              #{payment.month}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {formatDate(payment.dueDate)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {formatCurrency(payment.interestAmount)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {formatCurrency(payment.principalAmount)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {formatCurrency(payment.totalAmount)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
+                              {formatCurrency(payment.paidAmount)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-medium">
+                              {formatCurrency(
+                                payment.totalAmount - payment.paidAmount
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {getStatusBadge(payment.status)}
+                            </td>
+                            <td className="px-6 w-20 py-4 justify-space-between whitespace-nowrap">
+                              <div className="flex items-center space-x-2">
+                                <span title="Add Remarks">
+                                  <MessageCircleCode
                                     onClick={() => {
                                       setPaymentSchedule(payment);
-                                      setShowPaymentSchedule(true);
+                                      setShowRemarksForm(true);
                                     }}
-                                    className="h-5 w-5 text-green-600 cursor-pointer ml-2"
+                                    className="h-5 w-5 text-blue-600 cursor-pointer"
                                   />
                                 </span>
-                              )}
-                            </div>
+
+                                {payment?.status === "overdue" && (
+                                  <span title="Record Payment">
+                                    <CreditCard
+                                      onClick={() => {
+                                        setPaymentSchedule(payment);
+                                        setShowPaymentSchedule(true);
+                                      }}
+                                      className="h-5 w-5 text-green-600 cursor-pointer ml-2"
+                                    />
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan={9}
+                            className="h-12 px-6 py-6 text-center"
+                          >
+                            <motion.div
+                              initial={{ opacity: 0, x: 20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                            >
+                              <div className="min-w-full text-center py-4 text-gray-500">
+                                <MessageCircleOffIcon className="mx-auto h-12 w-12 text-gray-400" />
+                                <p className="mt-2 text-lg">
+                                  No payment schedule available.
+                                </p>
+                                <p className="text-sm">
+                                  Once payments are scheduled, they will appear
+                                  here.
+                                </p>
+                              </div>
+                            </motion.div>
                           </td>
                         </tr>
-                      ))}
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -1054,43 +1080,65 @@ const ComprehensiveInvestmentsView = ({
 
             {/* Referal Tab */}
             {activeTab === "referal" && user?.role === "admin" && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">
-                  Referral Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-white px-6 ">
-                    <p className="text-md text-gray-900">
-                      Referrer Name : {investor?.referralCode || "N/A"}
-                    </p>
-                  </div>
-                  <div className="bg-white px-6 ">
-                    <p className="text-md text-gray-900">
-                      Referrer Email : {investor?.referredBy?.name || "N/A"}
-                    </p>
-                  </div>
-                  <div className="bg-white px-6 ">
-                    <p className="text-md text-gray-900">
-                      Referrer Mobile : {investor?.referredBy?.mobile || "N/A"}
-                    </p>
-                  </div>
-                  <div className="bg-white px-6 ">
-                    <p className="text-md text-gray-900">
-                      Referrer Alt Mobile : {investor?.referredBy?.name || 0}
-                    </p>
-                  </div>
-                  <div className="bg-white px-6 ">
-                    <p className="text-md text-gray-900">
-                      Relation with referrer : {investor?.referredBy?.name || 0}
-                    </p>
-                  </div>
-                  <div className="bg-white px-6 ">
-                    <p className="text-md text-gray-900">
-                      Relation fee : {investor?.referredBy?.name || 0}
-                    </p>
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="space-y-6"
+              >
+                {/* Details Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
+                  {/* Investment Details */}
+                  <div className="bg-white p-6 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <User className="h-5 w-5 mr-2 text-blue-500" />
+                      Referral Information
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                        <span className="text-gray-600">Referrer Name:</span>
+                        <span className="font-medium">
+                          {investor?.referral?.name || "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                        <span className="text-gray-600">Referrer Email:</span>
+                        <span className="font-medium">
+                          {" "}
+                          {investor?.referral?.email || "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                        <span className="text-gray-600">Referrer Mobile:</span>
+                        <span className="font-medium text-green-600">
+                          {investor?.referral?.mobile || "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                        <span className="text-gray-600">
+                          Referrer Alt Mobile:
+                        </span>
+                        <span className="font-medium capitalize">
+                          {investor?.referral?.altMobile || "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                        <span className="text-gray-600">
+                          Relation with referrer:
+                        </span>
+                        <span className="font-medium">
+                          {investor?.referral?.type || "N/A"}
+                        </span>
+                      </div>
+                      {/* <div className="flex justify-between items-center py-1">
+                                      <span className="text-gray-600">Referal fee:</span>
+                                      <span className="font-medium">
+                                        {investor?.referral?.referalFee || "N/A"}
+                                      </span>
+                                    </div> */}
+                    </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
         </div>
@@ -1116,7 +1164,7 @@ const ComprehensiveInvestmentsView = ({
         isOpen={showRemarksForm}
         onClose={() => setShowRemarksForm(false)}
         title={`Add Remarks for ${investment?.investmentId}`}
-        size="md"
+        size="lg"
       >
         <CreateRemarksForm
           investmentId={investment?._id}

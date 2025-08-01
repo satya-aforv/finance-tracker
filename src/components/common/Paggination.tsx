@@ -19,7 +19,19 @@ export function PaginatedSchedule({
       <table className="min-w-full divide-y divide-gray-200">
         {tableHead}
         <tbody className="bg-white divide-y divide-gray-200">
-          {current.map(renderRow)}
+          {total != 0 ? (
+            current.map(renderRow)
+          ) : (
+            <tr className="min-w-full">
+              <td colSpan={9}>
+                <div className="min-w-full px-4 py-10 whitespace-nowrap text-xs text-gray-900 text-center">
+                  <p className="text-md text-[16px] text-gray-500">
+                    No payments
+                  </p>
+                </div>
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
       {/* Pagination controls */}

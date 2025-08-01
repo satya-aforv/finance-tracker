@@ -7,14 +7,8 @@ import {
   User,
   FileText,
   Clock,
-  Edit,
-  Save,
-  X,
-  Upload,
-  Download,
-  Trash2,
-  Plus,
-  Eye,
+  CircleDollarSign,
+  MessageCircleCode,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Button from "../../components/common/Button";
@@ -24,6 +18,8 @@ import { Investment } from "../../types";
 import { useAuth } from "../../contexts/AuthContext";
 import { investmentsService } from "../../services/investments";
 import toast from "react-hot-toast";
+import { useForm } from "react-hook-form";
+import { PaginatedSchedule } from "../../components/common/Paggination";
 
 interface InvestmentDetailsProps {
   investment: Investment;
@@ -38,13 +34,34 @@ const InvestmentDetails: React.FC<InvestmentDetailsProps> = ({
 }) => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<
-    "overview" | "schedule" | "documents" | "timeline"
+    "overview" | "schedule" | "documents" | "timeline" | "requestPrincipal"
   >("overview");
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
     status: investment.status,
     notes: investment.notes || "",
   });
+
+  const {
+    register,
+    formState: { errors, isSubmitting },
+  } = useForm<FormData>({
+    defaultValues: {
+      paymentType: "",
+      requestedAmount: 0,
+      requestedDisbursementDate: "",
+      status: "pending",
+      remarks: [],
+    },
+  });
+  const [principalAmountRequestedData, setPrincipalAmountRequestedData] =
+    useState({
+      paymentType: "",
+      requestedAmount: 0,
+      requestedDisbursementDate: "",
+      status: "pending",
+      remarks: [],
+    });
 
   // Check if user can manage (admin/finance_manager)
   const canManage = user?.role === "admin" || user?.role === "finance_manager";
@@ -166,7 +183,7 @@ const InvestmentDetails: React.FC<InvestmentDetailsProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
+          {/* <div className="flex items-center space-x-3">
             {canManage && !isEditing && (
               <Button
                 variant="outline"
@@ -200,7 +217,7 @@ const InvestmentDetails: React.FC<InvestmentDetailsProps> = ({
                 </Button>
               </>
             )}
-          </div>
+          </div> */}
         </div>
       </motion.div>
 
@@ -218,6 +235,11 @@ const InvestmentDetails: React.FC<InvestmentDetailsProps> = ({
               { id: "schedule", label: "Payment Schedule", icon: Calendar },
               { id: "documents", label: "Documents", icon: FileText },
               { id: "timeline", label: "Activity Timeline", icon: Clock },
+              {
+                id: "requestPrincipal",
+                label: "Principal Request",
+                icon: CircleDollarSign,
+              },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -605,6 +627,145 @@ const InvestmentDetails: React.FC<InvestmentDetailsProps> = ({
                 investmentId={investment._id}
                 isEditable={canManage}
               />
+            </motion.div>
+          )}
+
+          {}
+          {activeTab === "requestPrincipal" && (
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="space-y-4"
+            >
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Principal Request
+                </h3>
+              </div>
+              <div className="grid grid-cols-2 gap-4 overflow-x-auto bg-white rounded-lg border border-gray-200 px-4 py-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Payment type
+                  </label>
+                  <select
+                    value={principalAmountRequestedData.paymentType}
+                    onChange={(e) => {
+                      e.preventDefault();
+                      setPrincipalAmountRequestedData({
+                        ...principalAmountRequestedData,
+                        paymentType: e.target.value,
+                      });
+                    }}
+                    className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="" disabled>
+                      select
+                    </option>
+                    <option value="full">Full</option>
+                    <option value="partial">Partial</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Requested Amount
+                  </label>
+                  <input
+                    value={
+                      principalAmountRequestedData?.paymentType == "full"
+                        ? investment?.principalAmount
+                        : principalAmountRequestedData?.requestedAmount
+                    }
+                    disabled={
+                      principalAmountRequestedData?.paymentType == "full"
+                    }
+                    onChange={(e) =>
+                      setPrincipalAmountRequestedData({
+                        ...principalAmountRequestedData,
+                        requestedAmount: e.target.value,
+                      })
+                    }
+                    type="number"
+                    placeholder="e.g 1000000"
+                    className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Principal Payout Timeline
+                  </label>
+                  <input
+                    onChange={(e) =>
+                      setPrincipalAmountRequestedData({
+                        ...principalAmountRequestedData,
+                        requestedDisbursementDate: e.target.value,
+                      })
+                    }
+                    type="date"
+                    className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg border border-gray-200  overflow-x-auto">
+                <PaginatedSchedule
+                  schedule={[]}
+                  rowsPerPage={6}
+                  tableHead={
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          SN
+                        </th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Requested Amount
+                        </th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Payout TImeline
+                        </th>
+
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Remarks
+                        </th>
+                      </tr>
+                    </thead>
+                  }
+                  renderRow={(payment, idx) => (
+                    <tr
+                      key={idx}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-4 py-4 whitespace-nowrap text-xs font-xs text-gray-900">
+                        #{payment.month}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-xs font-xs text-gray-900">
+                        {formatDate(payment.dueDate)}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-xs font-xs text-gray-900">
+                        {formatCurrency(payment.interestAmount)}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        {getStatusBadge(payment.status)}
+                      </td>
+                      <td className="px-4 w-20 py-4 justify-space-between whitespace-nowrap">
+                        <div className="flex items-center space-x-2">
+                          <span title="Add Remarks">
+                            <MessageCircleCode
+                              onClick={() => {
+                                setPaymentSchedule(payment);
+                                setShowRemarksForm(true);
+                              }}
+                              className="h-5 w-5 text-blue-600 cursor-pointer"
+                            />
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                />
+              </div>
             </motion.div>
           )}
         </div>

@@ -1,27 +1,28 @@
-import React from 'react';
-import { X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React from "react";
+import { X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
   children: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: "sm" | "md" | "lg" | "xl";
 }
 
-const Modal: React.FC<ModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  title, 
-  children, 
-  size = 'md' 
+const Modal: React.FC<ModalProps> = ({
+  isOpen,
+  onClose,
+  title,
+  children,
+  size = "md",
 }) => {
   const sizeClasses = {
-    sm: 'max-w-md',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl'
+    sm: "max-w-md",
+    md: "max-w-lg",
+    lg: "max-w-2xl",
+    xl: "max-w-4xl",
+    xxl: "max-w-6xl",
   };
 
   return (
@@ -37,7 +38,7 @@ const Modal: React.FC<ModalProps> = ({
               onClick={onClose}
               className="fixed inset-0 bg-black bg-opacity-50"
             />
-            
+
             {/* Modal */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -55,11 +56,9 @@ const Modal: React.FC<ModalProps> = ({
                   <X className="h-5 w-5 text-gray-500" />
                 </button>
               </div>
-              
+
               {/* Content */}
-              <div className="p-6">
-                {children}
-              </div>
+              <div className="p-6">{children}</div>
             </motion.div>
           </div>
         </div>
