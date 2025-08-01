@@ -843,7 +843,7 @@ export default function UserProfile({
                                 transition={{ duration: 0.2 }}
                                 className="text-gray-900 py-2"
                               >
-                                {userData.address.present.state ||
+                                {userData?.address?.present?.state ||
                                   "Not specified"}
                               </motion.p>
                             )}
@@ -883,7 +883,7 @@ export default function UserProfile({
                                 transition={{ duration: 0.2 }}
                                 className="text-gray-900 py-2"
                               >
-                                {userData.address.present.city ||
+                                {userData?.address?.present?.city ||
                                   "Not specified"}
                               </motion.p>
                             )}
@@ -956,7 +956,7 @@ export default function UserProfile({
                                 transition={{ duration: 0.2 }}
                                 className="text-gray-900 py-2"
                               >
-                                {userData.address.permanent.country}
+                                {userData?.address?.permanent?.country}
                               </motion.p>
                             )}
                           </AnimatePresence>
@@ -997,7 +997,7 @@ export default function UserProfile({
                                 transition={{ duration: 0.2 }}
                                 className="text-gray-900 py-2"
                               >
-                                {userData.address.permanent.state ||
+                                {userData?.address?.permanent?.state ||
                                   "Not specified"}
                               </motion.p>
                             )}
@@ -1039,7 +1039,7 @@ export default function UserProfile({
                                 transition={{ duration: 0.2 }}
                                 className="text-gray-900 py-2"
                               >
-                                {userData.address.permanent.city ||
+                                {userData?.address?.permanent?.city ||
                                   "Not specified"}
                               </motion.p>
                             )}
