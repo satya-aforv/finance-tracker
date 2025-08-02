@@ -26,6 +26,7 @@ import ComprehensiveInvestmentsView from "./ComprehensiveInvestmentsView";
 import InvestmentAdvancedFilter, {
   InvestmentFilterValues,
 } from "./InvestmentFilter";
+import { useLocation } from "react-router-dom";
 
 const INVESTMENT_FILTERS_STORAGE_KEY = "investmentFilters";
 
@@ -69,14 +70,22 @@ const InvestmentsPage: React.FC = () => {
   const [currentView, setCurrentView] = useState<"list" | "comprehensive">(
     "list"
   );
+
   const [filters, setFilters] = useState<InvestmentFilterValues>(
     getInitialFilters()
   );
+  const params_check = useLocation();
   const [showFliterOptions, setShowFilterOptions] = useState(false);
   const [selectedInvestmentId, setSelectedInvestmentId] = useState<
     string | null
   >(null);
   const canManage = user?.role === "admin" || user?.role === "finance_manager";
+
+  useEffect(() => {
+    if (params_check?.search.includes("create=new")) {
+      setShowCreateModal(true);
+    }
+  }, [params_check]);
 
   const fetchInvestments = async () => {
     try {

@@ -19,6 +19,7 @@ import toast from "react-hot-toast";
 import PaymentForm from "./PaymentForm";
 import PaymentsFilter, { PaymentsFilterValues } from "./PaymentsFilter";
 import PaymentRecordForm from "./PaymentRecordForm";
+import { useLocation } from "react-router-dom";
 
 const PAYMENT_FILTERS_STORAGE_KEY = "paymentFilters";
 
@@ -54,7 +55,7 @@ const PaymentsPage: React.FC = () => {
   const [paymentFilters, setPaymentFilters] = useState(
     getInitialPaymentFilters()
   );
-
+  const params_check = useLocation();
   const canManage = user?.role === "admin" || user?.role === "finance_manager";
 
   const fetchPayments = async () => {
@@ -94,6 +95,12 @@ const PaymentsPage: React.FC = () => {
   useEffect(() => {
     fetchPayments();
   }, [currentPage, searchTerm, statusFilter, paymentFilters]);
+
+  useEffect(() => {
+    if (params_check?.search.includes("create=new")) {
+      setShowCreateModal(true);
+    }
+  }, [params_check]);
 
   const handleCreatePayment = async (data: any) => {
     try {

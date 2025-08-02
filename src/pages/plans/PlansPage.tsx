@@ -22,6 +22,7 @@ import toast from "react-hot-toast";
 import PlanForm from "./PlanForm";
 import PlanCalculator from "./PlanCalculator";
 import PlanFilter, { PlanFilterValues } from "./PlanFilter";
+import { useLocation } from "react-router-dom";
 
 const SEARCH_STORAGE_KEY = "plansSearchTerm";
 const PLAN_FILTERS_STORAGE_KEY = "plansFilters";
@@ -65,7 +66,7 @@ const PlansPage: React.FC = () => {
   const [showCalculatorModal, setShowCalculatorModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [showFliterOptions, setShowFilterOptions] = useState(false);
-
+  const params_check = useLocation();
   const [planFilters, setPlanFilters] = useState<PlanFilterValues>(
     getInitialPlanFilters()
   );
@@ -133,6 +134,12 @@ const PlansPage: React.FC = () => {
     activeFilter,
     planFilters,
   ]);
+
+  useEffect(() => {
+    if (params_check?.search.includes("create=new")) {
+      setShowCreateModal(true);
+    }
+  }, [params_check]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {

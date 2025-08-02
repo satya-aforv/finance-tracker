@@ -28,6 +28,7 @@ import toast from "react-hot-toast";
 import InvestorForm from "./InvestorForm";
 import ComprehensiveInvestorView from "./ComprehensiveInvestorView";
 import InvestorFilter, { InvestorFilterValues } from "./InvestorFilter";
+import { useLocation } from "react-router-dom";
 
 interface UserAccountModalState {
   show: boolean;
@@ -60,6 +61,7 @@ const InvestorsPage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState<{
     [key: string]: boolean;
   }>({});
+  const params_check = useLocation();
 
   // NEW: State for comprehensive view
   const [currentView, setCurrentView] = useState<"list" | "comprehensive">(
@@ -132,6 +134,12 @@ const InvestorsPage: React.FC = () => {
     statusFilter,
     userAccountFilter,
   ]);
+
+  useEffect(() => {
+    if (params_check?.search.includes("create=new")) {
+      setShowCreateModal(true);
+    }
+  }, [params_check]);
 
   // NEW: Handler for comprehensive view
   const handleViewComprehensive = (investorId: string) => {
