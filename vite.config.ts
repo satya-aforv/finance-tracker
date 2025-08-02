@@ -16,13 +16,13 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: 'https://finance-tracker-backend-f7fh.onrender.com',
+        target: 'http://localhost:5001',
         changeOrigin: true,
         secure: false,
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, _res) => {
             console.log('🔴 Backend proxy error:', err.message);
-            console.log('💡 Make sure your backend is running on https://finance-tracker-backend-f7fh.onrender.com');
+            console.log('💡 Make sure your backend is running on http://localhost:5001');
             console.log('💡 Start backend with: cd backend && npm run dev');
           });
           proxy.on('proxyReq', (proxyReq, req, _res) => {
@@ -55,7 +55,7 @@ export default defineConfig({
   },
   define: {
     // Replace env variables at build time
-    __API_URL__: JSON.stringify(process.env.VITE_API_URL || 'https://finance-tracker-backend-f7fh.onrender.com/api')
+    __API_URL__: JSON.stringify(process.env.VITE_API_URL || 'http://localhost:5001/api')
   },
   optimizeDeps: {
     include: [
