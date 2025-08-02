@@ -510,122 +510,137 @@ const InvestorsPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {investors.map((investor) => (
-                    <tr key={investor._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {investor.name}
+                  {investors && investors.length > 0 ? (
+                    investors.map((investor) => (
+                      <tr key={investor._id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {investor.name}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {investor.investorId}
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-500">
-                            {investor.investorId}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm text-gray-900">
+                              {investor.email}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {investor.phone}
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm text-gray-900">
-                            {investor.email}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {formatCurrency(investor.totalInvestment)}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {investor.activeInvestments} active investments
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-500">
-                            {investor.phone}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="space-y-1">
+                            {getUserAccountBadge(investor)}
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {formatCurrency(investor.totalInvestment)}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {investor.activeInvestments} active investments
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="space-y-1">
-                          {getUserAccountBadge(investor)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(investor.status)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center space-x-1">
-                          {/* NEW: Comprehensive View Button */}
-                          <button
-                            onClick={() =>
-                              handleViewComprehensive(investor._id)
-                            }
-                            className="p-2 text-green-600 hover:text-green-900 hover:bg-green-50 rounded transition-colors"
-                            title="View Comprehensive Details & Add Investments"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-
-                          {/* User Account Actions */}
-                          {!investor.userId ? (
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {getStatusBadge(investor.status)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex items-center space-x-1">
+                            {/* NEW: Comprehensive View Button */}
                             <button
                               onClick={() =>
-                                setUserAccountModal({
-                                  show: true,
-                                  investor,
-                                  type: "create",
-                                })
+                                handleViewComprehensive(investor._id)
                               }
                               className="p-2 text-green-600 hover:text-green-900 hover:bg-green-50 rounded transition-colors"
-                              title="Create User Account"
-                              disabled={actionLoading[`create-${investor._id}`]}
+                              title="View Comprehensive Details & Add Investments"
                             >
-                              {actionLoading[`create-${investor._id}`] ? (
-                                <LoadingSpinner size="sm" />
-                              ) : (
-                                <UserPlus className="h-4 w-4" />
-                              )}
+                              <Eye className="h-4 w-4" />
                             </button>
-                          ) : (
-                            <button
-                              onClick={() =>
-                                setUserAccountModal({
-                                  show: true,
-                                  investor,
-                                  type: "reset",
-                                })
-                              }
-                              className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded transition-colors"
-                              title="Reset Password"
-                              disabled={actionLoading[`reset-${investor._id}`]}
-                            >
-                              {actionLoading[`reset-${investor._id}`] ? (
-                                <LoadingSpinner size="sm" />
-                              ) : (
-                                <Key className="h-4 w-4" />
-                              )}
-                            </button>
-                          )}
 
-                          {/* Standard Actions */}
-                          <button
-                            onClick={() => {
-                              setSelectedInvestor(investor);
-                              setShowEditModal(true);
-                            }}
-                            className="p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded transition-colors"
-                            title="Edit Investor"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteInvestor(investor)}
-                            className="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded transition-colors"
-                            title="Delete Investor"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
+                            {/* User Account Actions */}
+                            {!investor.userId ? (
+                              <button
+                                onClick={() =>
+                                  setUserAccountModal({
+                                    show: true,
+                                    investor,
+                                    type: "create",
+                                  })
+                                }
+                                className="p-2 text-green-600 hover:text-green-900 hover:bg-green-50 rounded transition-colors"
+                                title="Create User Account"
+                                disabled={
+                                  actionLoading[`create-${investor._id}`]
+                                }
+                              >
+                                {actionLoading[`create-${investor._id}`] ? (
+                                  <LoadingSpinner size="sm" />
+                                ) : (
+                                  <UserPlus className="h-4 w-4" />
+                                )}
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() =>
+                                  setUserAccountModal({
+                                    show: true,
+                                    investor,
+                                    type: "reset",
+                                  })
+                                }
+                                className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded transition-colors"
+                                title="Reset Password"
+                                disabled={
+                                  actionLoading[`reset-${investor._id}`]
+                                }
+                              >
+                                {actionLoading[`reset-${investor._id}`] ? (
+                                  <LoadingSpinner size="sm" />
+                                ) : (
+                                  <Key className="h-4 w-4" />
+                                )}
+                              </button>
+                            )}
+
+                            {/* Standard Actions */}
+                            <button
+                              onClick={() => {
+                                setSelectedInvestor(investor);
+                                setShowEditModal(true);
+                              }}
+                              className="p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded transition-colors"
+                              title="Edit Investor"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteInvestor(investor)}
+                              className="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded transition-colors"
+                              title="Delete Investor"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr className="h-[200px]">
+                      <td
+                        colSpan={6}
+                        className="min-h-[300px] px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center"
+                      >
+                        <p className="text-gray-500">No data found</p>
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
