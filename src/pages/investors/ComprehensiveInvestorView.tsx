@@ -832,7 +832,25 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                                             </h3>
                                             <div className="text-sm text-gray-500">
                                               {investment?.schedule?.length}{" "}
-                                              total payments
+                                              total payments ({" "}
+                                              {
+                                                investment?.schedule?.filter(
+                                                  (e) => e.status == "overdue"
+                                                ).length
+                                              }{" "}
+                                              overdue /{" "}
+                                              {
+                                                investment?.schedule?.filter(
+                                                  (e) => e.status == "pending"
+                                                ).length
+                                              }{" "}
+                                              pending /{" "}
+                                              {
+                                                investment?.schedule?.filter(
+                                                  (e) => e.status == "paid"
+                                                ).length
+                                              }{" "}
+                                              paid )
                                             </div>
                                           </div>
 
