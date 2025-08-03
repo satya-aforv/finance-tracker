@@ -417,7 +417,7 @@ const PaymentsPage: React.FC = () => {
                   ) : (
                     <tr className="h-[200px]">
                       <td
-                        colSpan={6}
+                        colSpan={7}
                         className="min-h-[300px] px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center"
                       >
                         <p className="text-gray-500">No data found</p>
