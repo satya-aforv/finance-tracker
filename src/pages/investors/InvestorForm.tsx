@@ -555,7 +555,7 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
     } else {
       setCalculationResult(null);
     }
-  }, [selectedPlan, watchPrincipalAmount]);
+  }, [selectedPlan, watchPrincipalAmount, watchPlan]);
 
   const handleSameAddress = (value: boolean) => {
     syncPermanentAddress(value);

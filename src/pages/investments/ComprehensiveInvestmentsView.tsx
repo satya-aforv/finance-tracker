@@ -26,6 +26,7 @@ import {
   MessageCircleCode,
   CreditCard,
   Receipt,
+  CircleDollarSign,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm, useWatch } from "react-hook-form";
@@ -38,6 +39,8 @@ import { useAuth } from "../../contexts/AuthContext";
 import DocumentManager from "../../components/investments/DocumentManager";
 import InvestmentPaymentForm from "./InvestmentPaymentForm";
 import CreateRemarksForm from "../../components/common/CreateRemarksForm";
+import { PaginatedSchedule } from "../../components/common/Paggination";
+import CreateRemarksFormPR from "../../components/common/CreateRemarksForPR";
 
 const Button = ({
   children,
@@ -160,10 +163,21 @@ const ComprehensiveInvestmentsView = ({
     status: investment.status,
     notes: investment.notes || "",
   });
+  const [investmentData, setInvestmentData] = useState(investmentsData);
   const [showRemarksForm, setShowRemarksForm] = useState(false);
   const [paymentSchedule, setPaymentSchedule] = useState(null);
   const [showPaymentSchedule, setShowPaymentSchedule] = useState(false);
   // Fetch investor data
+
+  const [principalAmountRequestedData, setPrincipalAmountRequestedData] =
+    useState({
+      paymentType: "",
+      requestedAmount: 0,
+      requestedDisbursementDate: "",
+      status: "pending",
+      remarks: [],
+    });
+
   useEffect(() => {
     const fetchInvestorData = async () => {
       try {
@@ -340,6 +354,24 @@ const ComprehensiveInvestmentsView = ({
     );
   };
 
+  const fetchInvestments = async () => {
+    try {
+      const response = await investmentsService.getInvestment(
+        investmentData._id
+      );
+
+      if (!response?.data) {
+        toast.error("Error fetching investment details");
+        return;
+      }
+
+      setInvestmentData(response?.data);
+      setPrincipalAmountRequestedData(response);
+    } catch (error) {
+      console.error("Error fetching investment details:", error);
+    }
+  };
+
   const getProgressCounts = () => {
     // Check if investment data exists
     if (!investment?.schedule?.length) return 0;
@@ -355,6 +387,48 @@ const ComprehensiveInvestmentsView = ({
     const progressPercentage = (completedCount / totalSchedules) * 100;
 
     return Math.round(progressPercentage);
+  };
+
+  const handleSubmitPrincipalAmount = async () => {
+    const { paymentType, requestedAmount, requestedDisbursementDate, remarks } =
+      principalAmountRequestedData;
+
+    if (!paymentType || !requestedAmount || !requestedDisbursementDate) {
+      alert("Please fill all required fields");
+      return;
+    }
+
+    try {
+      const payload = {
+        paymentType,
+        requestedAmount,
+        requestedDisbursementDate,
+      };
+
+      // If a remark is provided, include it
+      if (remarks?.[0]?.content) {
+        payload["content"] = remarks[0].content;
+        payload["attachments"] = remarks[0].attachments || [];
+      }
+
+      const { data } = await investmentsService.add_principal_request(
+        investmentData._id,
+        payload
+      );
+      toast.success("Principal request submitted successfully");
+      console.log("Response:", data);
+      setPrincipalAmountRequestedData({
+        paymentType: "",
+        requestedAmount: 0,
+        requestedDisbursementDate: "",
+        status: "pending",
+        remarks: [],
+      });
+      await fetchInvestments();
+    } catch (error: any) {
+      console.error("Error:", error);
+      alert(error?.response?.data?.message || "Submission failed");
+    }
   };
 
   return (
@@ -572,6 +646,11 @@ const ComprehensiveInvestmentsView = ({
                 { id: "documents", label: "Documents", icon: FileText },
                 { id: "timeline", label: "Activity Timeline", icon: Clock },
                 { id: "referal", label: "Referal Details", icon: Clock },
+                {
+                  id: "requestPrincipal",
+                  label: "Principal Request",
+                  icon: CircleDollarSign,
+                },
               ].map((tab) => {
                 if (user?.role !== "admin" && tab.id === "referal") {
                   return null;
@@ -1140,6 +1219,167 @@ const ComprehensiveInvestmentsView = ({
                 </div>
               </motion.div>
             )}
+
+            {activeTab === "requestPrincipal" && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="space-y-4"
+              >
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Principal Request
+                  </h3>
+                </div>
+                <div className="grid grid-cols-2 gap-4 overflow-x-auto bg-white rounded-lg border border-gray-200 px-4 py-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Payment type
+                    </label>
+                    <select
+                      value={principalAmountRequestedData.paymentType}
+                      onChange={(e) => {
+                        e.preventDefault();
+                        if (e.target.value == "partial") {
+                          console.log(e.target.value, "e.target.value");
+                          setPrincipalAmountRequestedData({
+                            ...principalAmountRequestedData,
+                            requestedAmount: "",
+                          });
+                        }
+                        setPrincipalAmountRequestedData({
+                          ...principalAmountRequestedData,
+                          paymentType: e.target.value,
+                        });
+                      }}
+                      className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="" disabled>
+                        select
+                      </option>
+                      <option value="full">Full</option>
+                      <option value="partial">Partial</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Requested Amount
+                    </label>
+                    <input
+                      value={
+                        principalAmountRequestedData?.paymentType == "full"
+                          ? investmentData?.principalAmount
+                          : principalAmountRequestedData?.requestedAmount
+                      }
+                      disabled={
+                        principalAmountRequestedData?.paymentType == "full"
+                      }
+                      onChange={(e) =>
+                        setPrincipalAmountRequestedData({
+                          ...principalAmountRequestedData,
+                          requestedAmount: e.target.value,
+                        })
+                      }
+                      type="number"
+                      placeholder="e.g 1000000"
+                      className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Principal Payout Timeline
+                    </label>
+                    <input
+                      onChange={(e) =>
+                        setPrincipalAmountRequestedData({
+                          ...principalAmountRequestedData,
+                          requestedDisbursementDate: e.target.value,
+                        })
+                      }
+                      type="date"
+                      className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="flex pt-7 justify-center min-w-full">
+                    <Button
+                      type="button"
+                      onClick={() => handleSubmitPrincipalAmount()}
+                      className="w-[300px] shadow-lg text-white font-medium text-sm px-5 py-2.5 rounded-lg bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50"
+                      variant="primary"
+                      disabled={
+                        !principalAmountRequestedData?.requestedAmount ||
+                        principalAmountRequestedData?.requestedAmount == 0 ||
+                        !principalAmountRequestedData?.paymentType ||
+                        !principalAmountRequestedData?.requestedDisbursementDate
+                      }
+                    >
+                      Submit
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg border border-gray-200  overflow-x-auto">
+                  <PaginatedSchedule
+                    schedule={investmentData?.principalRequest}
+                    rowsPerPage={6}
+                    tableHead={
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            SN
+                          </th>
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Requested Amount
+                          </th>
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Payout TImeline
+                          </th>
+
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Remarks
+                          </th>
+                        </tr>
+                      </thead>
+                    }
+                    renderRow={(payment, idx) => (
+                      <tr
+                        key={idx}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
+                        <td className="px-4 py-4 whitespace-nowrap text-xs font-xs text-gray-900">
+                          #{payment.month || idx}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-xs font-xs text-gray-900">
+                          {formatDate(payment.requestedDisbursementDate)}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-xs font-xs text-gray-900">
+                          {formatCurrency(payment.requestedAmount)}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          {getStatusBadge(payment.status)}
+                        </td>
+                        <td className="px-4 w-20 py-4 justify-space-between whitespace-nowrap">
+                          <div className="flex items-center space-x-2">
+                            <span title="Add Remarks">
+                              <MessageCircleCode
+                                onClick={() => {
+                                  setPaymentSchedule(payment);
+                                  setShowRemarksForm(true);
+                                }}
+                                className="h-5 w-5 text-blue-600 cursor-pointer"
+                              />
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  />
+                </div>
+              </motion.div>
+            )}
           </div>
         </div>
       </div>
@@ -1188,6 +1428,22 @@ const ComprehensiveInvestmentsView = ({
           paymentSchedule={paymentSchedule}
           onSubmit={handleRemarksSubmit}
           onCancel={() => setShowPaymentSchedule(false)}
+        />
+      </Modal>
+
+      {/* Remarks Creation Modal */}
+      <Modal
+        isOpen={showRemarksForm}
+        onClose={() => setShowRemarksForm(false)}
+        title={`Add Remarks for ${investmentData?.investmentId}`}
+        size="xl"
+      >
+        <CreateRemarksFormPR
+          investmentId={investmentData?._id}
+          investment={investmentData}
+          principalRequest={paymentSchedule}
+          onSubmit={() => fetchInvestments()}
+          onCancel={() => setShowRemarksForm(false)}
         />
       </Modal>
     </div>

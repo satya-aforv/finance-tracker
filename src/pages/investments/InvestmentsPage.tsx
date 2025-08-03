@@ -70,7 +70,7 @@ const InvestmentsPage: React.FC = () => {
   const [currentView, setCurrentView] = useState<"list" | "comprehensive">(
     "list"
   );
-
+  const [showEditModal, setShowEditModal] = useState(false);
   const [filters, setFilters] = useState<InvestmentFilterValues>(
     getInitialFilters()
   );
@@ -175,6 +175,22 @@ const InvestmentsPage: React.FC = () => {
     setFilters(newFilters);
     setCurrentPage(1);
     setShowFilterOptions(false);
+  };
+
+  const handleEditInvestment = async (data: Partial<Investment>) => {
+    if (!selectedInvestment) return;
+
+    try {
+      await investmentsService.updateInvestment(selectedInvestment._id, data);
+      toast.success("Investment updated successfully");
+      setShowEditModal(false);
+      setSelectedInvestment(null);
+      fetchInvestments();
+    } catch (error: any) {
+      toast.error(
+        error.response?.data?.message || "Failed to update investment"
+      );
+    }
   };
 
   const handleFilterReset = () => {
@@ -524,6 +540,16 @@ const InvestmentsPage: React.FC = () => {
                                 <Eye className="h-4 w-4" />
                               </button>
                               <button
+                                onClick={() => {
+                                  setSelectedInvestment(investment);
+                                  setShowEditModal(true);
+                                }}
+                                className="p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded transition-colors"
+                                title="Edit Investor"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              <button
                                 onClick={() => handleViewDetails(investment)}
                                 className="p-2 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-lg transition-colors"
                                 title="View Schedule"
@@ -609,6 +635,28 @@ const InvestmentsPage: React.FC = () => {
           />
         </Modal>
       )}
+
+      {/* Edit Modal */}
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedInvestment(null);
+        }}
+        title="Edit Investor"
+        size="xl"
+      >
+        {selectedInvestment && (
+          <InvestmentForm
+            investment={selectedInvestment}
+            onSubmit={handleEditInvestment}
+            onCancel={() => {
+              setShowEditModal(false);
+              setSelectedInvestment(null);
+            }}
+          />
+        )}
+      </Modal>
 
       {/* Investment Details Modal */}
       <Modal

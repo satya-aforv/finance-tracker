@@ -1,6 +1,11 @@
 // src/services/api.ts - Enhanced API Service with Better Error Handling
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
-import { ApiResponse } from '../types';
+import axios, {
+  AxiosInstance,
+  AxiosRequestConfig,
+  AxiosResponse,
+  AxiosError,
+} from "axios";
+import { ApiResponse } from "../types";
 
 class ApiService {
   private api: AxiosInstance;
@@ -12,15 +17,16 @@ class ApiService {
 
   constructor() {
     // Use proxy in development, direct URL in production
-    const baseURL = import.meta.env.DEV 
-      ? '/api'  // This will use Vite's proxy
-      : import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+    const baseURL = import.meta.env.DEV
+      ? "/api" // This will use Vite's proxy
+      : import.meta.env.VITE_API_URL ||
+        "https://finance-tracker-backend-f7fh.onrender.com/api";
 
     this.api = axios.create({
       baseURL,
       timeout: 30000,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       withCredentials: false,
     });
@@ -32,41 +38,41 @@ class ApiService {
     // Request interceptor to add auth token and clean params
     this.api.interceptors.request.use(
       (config) => {
-        const token = localStorage.getItem('auth_token');
+        const token = localStorage.getItem("auth_token");
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
-        
+
         // Clean empty query parameters
         if (config.params) {
           const cleanParams: any = {};
-          Object.keys(config.params).forEach(key => {
+          Object.keys(config.params).forEach((key) => {
             const value = config.params[key];
             // Only include non-empty values
-            if (value !== '' && value !== null && value !== undefined) {
+            if (value !== "" && value !== null && value !== undefined) {
               cleanParams[key] = value;
             }
           });
           config.params = cleanParams;
         }
-        
+
         // Add request ID for tracking
-        config.headers['X-Request-ID'] = this.generateRequestId();
-        
+        config.headers["X-Request-ID"] = this.generateRequestId();
+
         // Add debug logging in development
         if (import.meta.env.DEV) {
-          console.log('🚀 API Request:', {
+          console.log("🚀 API Request:", {
             method: config.method?.toUpperCase(),
             url: config.baseURL + config.url,
             params: config.params,
-            headers: this.sanitizeHeaders(config.headers)
+            headers: this.sanitizeHeaders(config.headers),
           });
         }
-        
+
         return config;
       },
       (error) => {
-        console.error('❌ Request interceptor error:', error);
+        console.error("❌ Request interceptor error:", error);
         return Promise.reject(this.normalizeError(error));
       }
     );
@@ -75,27 +81,29 @@ class ApiService {
     this.api.interceptors.response.use(
       (response: AxiosResponse) => {
         if (import.meta.env.DEV) {
-          console.log('✅ API Response:', {
+          console.log("✅ API Response:", {
             status: response.status,
             url: response.config.url,
-            data: response.data?.success !== false ? '✓' : response.data
+            data: response.data?.success !== false ? "✓" : response.data,
           });
         }
         return response;
       },
       async (error: AxiosError) => {
-        const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
+        const originalRequest = error.config as AxiosRequestConfig & {
+          _retry?: boolean;
+        };
 
         // Log error details
         if (import.meta.env.DEV) {
-          console.error('❌ API Error Details:', {
+          console.error("❌ API Error Details:", {
             message: error.message,
             code: error.code,
             status: error.response?.status,
             statusText: error.response?.statusText,
             url: error.config?.url,
             method: error.config?.method,
-            data: error.response?.data
+            data: error.response?.data,
           });
         }
 
@@ -108,12 +116,14 @@ class ApiService {
             // If already refreshing, queue this request
             return new Promise((resolve, reject) => {
               this.failedQueue.push({ resolve, reject });
-            }).then(token => {
-              originalRequest.headers!.Authorization = `Bearer ${token}`;
-              return this.api(originalRequest);
-            }).catch(err => {
-              return Promise.reject(err);
-            });
+            })
+              .then((token) => {
+                originalRequest.headers!.Authorization = `Bearer ${token}`;
+                return this.api(originalRequest);
+              })
+              .catch((err) => {
+                return Promise.reject(err);
+              });
           }
 
           originalRequest._retry = true;
@@ -132,38 +142,43 @@ class ApiService {
             this.processQueue(null, error);
           }
         }
-        
+
         return Promise.reject(this.normalizeError(error));
       }
     );
   }
 
   private handleSpecificErrors(error: AxiosError) {
-    if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
-      console.error('🌐 Network error - Backend server may not be running');
-      console.error('💡 Solution: Make sure to run "cd backend && npm run dev"');
+    if (
+      error.code === "ERR_NETWORK" ||
+      error.message.includes("Network Error")
+    ) {
+      console.error("🌐 Network error - Backend server may not be running");
+      console.error(
+        '💡 Solution: Make sure to run "cd backend && npm run dev"'
+      );
     }
 
-    if (error.code === 'ECONNREFUSED') {
-      console.error('🔌 Connection refused - Backend server is not accessible');
+    if (error.code === "ECONNREFUSED") {
+      console.error("🔌 Connection refused - Backend server is not accessible");
     }
 
     if (error.response?.status === 404) {
-      console.warn('🔍 API endpoint not found:', error.config?.url);
+      console.warn("🔍 API endpoint not found:", error.config?.url);
     }
 
     if (error.response?.status >= 500) {
-      console.error('🔥 Server error - Backend may have crashed');
+      console.error("🔥 Server error - Backend may have crashed");
     }
   }
 
   private clearAuthAndRedirect() {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user');
-    
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("user");
+
     // Only redirect if not already on login page
-    if (!window.location.pathname.includes('/login')) {
-      window.location.href = '/login';
+    if (!window.location.pathname.includes("/login")) {
+      window.location.href = "/login";
     }
   }
 
@@ -175,18 +190,21 @@ class ApiService {
         resolve(token);
       }
     });
-    
+
     this.failedQueue = [];
   }
 
   private generateRequestId(): string {
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    return (
+      Math.random().toString(36).substring(2, 15) +
+      Math.random().toString(36).substring(2, 15)
+    );
   }
 
   private sanitizeHeaders(headers: any): any {
     const sanitized = { ...headers };
     if (sanitized.Authorization) {
-      sanitized.Authorization = 'Bearer ***';
+      sanitized.Authorization = "Bearer ***";
     }
     return sanitized;
   }
@@ -194,28 +212,29 @@ class ApiService {
   private normalizeError(error: AxiosError): any {
     // Create standardized error object
     const normalizedError = {
-      message: 'An error occurred',
-      code: 'UNKNOWN_ERROR',
+      message: "An error occurred",
+      code: "UNKNOWN_ERROR",
       statusCode: 0,
       details: null,
-      originalError: error
+      originalError: error,
     };
 
     if (error.response) {
       // Server responded with error status
       normalizedError.statusCode = error.response.status;
       normalizedError.message = error.response.data?.message || error.message;
-      normalizedError.code = error.response.data?.code || `HTTP_${error.response.status}`;
+      normalizedError.code =
+        error.response.data?.code || `HTTP_${error.response.status}`;
       normalizedError.details = error.response.data;
     } else if (error.request) {
       // Network error
-      normalizedError.message = 'Network error - unable to reach server';
-      normalizedError.code = 'NETWORK_ERROR';
+      normalizedError.message = "Network error - unable to reach server";
+      normalizedError.code = "NETWORK_ERROR";
       normalizedError.statusCode = 0;
     } else {
       // Request setup error
       normalizedError.message = error.message;
-      normalizedError.code = 'REQUEST_ERROR';
+      normalizedError.code = "REQUEST_ERROR";
     }
 
     return normalizedError;
@@ -224,16 +243,16 @@ class ApiService {
   // Helper method to clean parameters
   private cleanParams(params: any): any {
     if (!params) return undefined;
-    
+
     const cleaned: any = {};
-    Object.keys(params).forEach(key => {
+    Object.keys(params).forEach((key) => {
       const value = params[key];
       // Only include non-empty values
-      if (value !== '' && value !== null && value !== undefined) {
+      if (value !== "" && value !== null && value !== undefined) {
         cleaned[key] = value;
       }
     });
-    
+
     // Return undefined if no valid params
     return Object.keys(cleaned).length > 0 ? cleaned : undefined;
   }
@@ -250,7 +269,7 @@ class ApiService {
     if (config?.params) {
       config.params = this.cleanParams(config.params);
     }
-    
+
     const response = await this.api.get(url, config);
     return response.data;
   }
@@ -301,10 +320,10 @@ class ApiService {
     onUploadProgress?: (progressEvent: any) => void
   ): Promise<ApiResponse<T>> {
     const formData = new FormData();
-    formData.append('file', file);
-    
+    formData.append("file", file);
+
     if (data) {
-      Object.keys(data).forEach(key => {
+      Object.keys(data).forEach((key) => {
         if (data[key] !== null && data[key] !== undefined) {
           formData.append(key, data[key]);
         }
@@ -313,7 +332,7 @@ class ApiService {
 
     const response = await this.api.post(url, formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
       onUploadProgress,
     });
@@ -328,15 +347,15 @@ class ApiService {
     onUploadProgress?: (progressEvent: any) => void
   ): Promise<ApiResponse<T>> {
     const formData = new FormData();
-    
+
     // Append files
     files.forEach((file, index) => {
-      formData.append('files', file);
+      formData.append("files", file);
     });
-    
+
     // Append additional data
     if (data) {
-      Object.keys(data).forEach(key => {
+      Object.keys(data).forEach((key) => {
         if (data[key] !== null && data[key] !== undefined) {
           formData.append(key, data[key]);
         }
@@ -345,7 +364,7 @@ class ApiService {
 
     const response = await this.api.post(url, formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
       onUploadProgress,
     });
@@ -364,14 +383,14 @@ class ApiService {
   ): Promise<Blob> {
     const response = await this.api.get(url, {
       ...config,
-      responseType: 'blob'
+      responseType: "blob",
     });
 
     // If filename is provided, trigger download
     if (filename) {
       const blob = new Blob([response.data]);
       const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = downloadUrl;
       link.download = filename;
       document.body.appendChild(link);
@@ -389,19 +408,21 @@ class ApiService {
     onProgress?: (progress: number) => void
   ): Promise<Blob> {
     const response = await this.api.get(url, {
-      responseType: 'blob',
+      responseType: "blob",
       onDownloadProgress: (progressEvent) => {
         if (onProgress && progressEvent.total) {
-          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          const progress = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
           onProgress(progress);
         }
-      }
+      },
     });
 
     // Trigger download
     const blob = new Blob([response.data]);
     const downloadUrl = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = downloadUrl;
     link.download = filename;
     document.body.appendChild(link);
@@ -417,17 +438,17 @@ class ApiService {
   // ================================
 
   setToken(token: string) {
-    localStorage.setItem('auth_token', token);
+    localStorage.setItem("auth_token", token);
     this.api.defaults.headers.Authorization = `Bearer ${token}`;
   }
 
   removeToken() {
-    localStorage.removeItem('auth_token');
+    localStorage.removeItem("auth_token");
     delete this.api.defaults.headers.Authorization;
   }
 
   getToken(): string | null {
-    return localStorage.getItem('auth_token');
+    return localStorage.getItem("auth_token");
   }
 
   // ================================
@@ -437,11 +458,11 @@ class ApiService {
   // Test backend connectivity
   async testConnection(): Promise<boolean> {
     try {
-      const response = await this.api.get('/test', { timeout: 5000 });
-      console.log('✅ Backend connection test successful:', response.data);
+      const response = await this.api.get("/test", { timeout: 5000 });
+      console.log("✅ Backend connection test successful:", response.data);
       return true;
     } catch (error) {
-      console.error('❌ Backend connection test failed:', error);
+      console.error("❌ Backend connection test failed:", error);
       return false;
     }
   }
@@ -453,13 +474,13 @@ class ApiService {
     services: any;
     version: string;
   }> {
-    const response = await this.api.get('/health');
+    const response = await this.api.get("/health");
     return response.data;
   }
 
   // Retry failed request
   async retry<T = any>(
-    method: 'get' | 'post' | 'put' | 'patch' | 'delete',
+    method: "get" | "post" | "put" | "patch" | "delete",
     url: string,
     data?: any,
     config?: AxiosRequestConfig,
@@ -472,19 +493,19 @@ class ApiService {
         let response: AxiosResponse;
 
         switch (method) {
-          case 'get':
+          case "get":
             response = await this.api.get(url, config);
             break;
-          case 'post':
+          case "post":
             response = await this.api.post(url, data, config);
             break;
-          case 'put':
+          case "put":
             response = await this.api.put(url, data, config);
             break;
-          case 'patch':
+          case "patch":
             response = await this.api.patch(url, data, config);
             break;
-          case 'delete':
+          case "delete":
             response = await this.api.delete(url, config);
             break;
           default:
@@ -494,12 +515,16 @@ class ApiService {
         return response.data;
       } catch (error) {
         lastError = error;
-        
+
         if (attempt < maxRetries) {
           // Wait before retrying (exponential backoff)
           const delay = Math.pow(2, attempt - 1) * 1000;
-          await new Promise(resolve => setTimeout(resolve, delay));
-          console.warn(`🔄 Retrying request (attempt ${attempt + 1}/${maxRetries}) after ${delay}ms`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          console.warn(
+            `🔄 Retrying request (attempt ${
+              attempt + 1
+            }/${maxRetries}) after ${delay}ms`
+          );
         }
       }
     }
@@ -510,7 +535,7 @@ class ApiService {
   // Cancel all pending requests
   cancelAllRequests() {
     // This would require implementing request cancellation with AbortController
-    console.warn('Request cancellation not implemented yet');
+    console.warn("Request cancellation not implemented yet");
   }
 
   // Set request timeout
@@ -525,7 +550,9 @@ class ApiService {
 
   // Add request interceptor
   addRequestInterceptor(
-    onFulfilled?: (config: AxiosRequestConfig) => AxiosRequestConfig | Promise<AxiosRequestConfig>,
+    onFulfilled?: (
+      config: AxiosRequestConfig
+    ) => AxiosRequestConfig | Promise<AxiosRequestConfig>,
     onRejected?: (error: any) => any
   ) {
     return this.api.interceptors.request.use(onFulfilled, onRejected);
@@ -533,15 +560,17 @@ class ApiService {
 
   // Add response interceptor
   addResponseInterceptor(
-    onFulfilled?: (response: AxiosResponse) => AxiosResponse | Promise<AxiosResponse>,
+    onFulfilled?: (
+      response: AxiosResponse
+    ) => AxiosResponse | Promise<AxiosResponse>,
     onRejected?: (error: any) => any
   ) {
     return this.api.interceptors.response.use(onFulfilled, onRejected);
   }
 
   // Remove interceptor
-  removeInterceptor(type: 'request' | 'response', interceptorId: number) {
-    if (type === 'request') {
+  removeInterceptor(type: "request" | "response", interceptorId: number) {
+    if (type === "request") {
       this.api.interceptors.request.eject(interceptorId);
     } else {
       this.api.interceptors.response.eject(interceptorId);
@@ -558,24 +587,34 @@ class ApiService {
   // ================================
 
   // Execute multiple requests in parallel
-  async batch<T = any>(requests: Array<{
-    method: 'get' | 'post' | 'put' | 'patch' | 'delete';
-    url: string;
-    data?: any;
-    config?: AxiosRequestConfig;
-  }>): Promise<Array<ApiResponse<T> | Error>> {
+  async batch<T = any>(
+    requests: Array<{
+      method: "get" | "post" | "put" | "patch" | "delete";
+      url: string;
+      data?: any;
+      config?: AxiosRequestConfig;
+    }>
+  ): Promise<Array<ApiResponse<T> | Error>> {
     const promises = requests.map(async (request) => {
       try {
         switch (request.method) {
-          case 'get':
+          case "get":
             return await this.get<T>(request.url, request.config);
-          case 'post':
-            return await this.post<T>(request.url, request.data, request.config);
-          case 'put':
+          case "post":
+            return await this.post<T>(
+              request.url,
+              request.data,
+              request.config
+            );
+          case "put":
             return await this.put<T>(request.url, request.data, request.config);
-          case 'patch':
-            return await this.patch<T>(request.url, request.data, request.config);
-          case 'delete':
+          case "patch":
+            return await this.patch<T>(
+              request.url,
+              request.data,
+              request.config
+            );
+          case "delete":
             return await this.delete<T>(request.url, request.config);
           default:
             throw new Error(`Unsupported method: ${request.method}`);
@@ -594,9 +633,11 @@ class ApiService {
 
   // Check if error is network error
   isNetworkError(error: any): boolean {
-    return error.code === 'NETWORK_ERROR' || 
-           error.code === 'ERR_NETWORK' || 
-           error.message?.includes('Network Error');
+    return (
+      error.code === "NETWORK_ERROR" ||
+      error.code === "ERR_NETWORK" ||
+      error.message?.includes("Network Error")
+    );
   }
 
   // Check if error is authentication error
@@ -611,7 +652,7 @@ class ApiService {
 
   // Check if error is validation error
   isValidationError(error: any): boolean {
-    return error.statusCode === 400 && error.code === 'VALIDATION_ERROR';
+    return error.statusCode === 400 && error.code === "VALIDATION_ERROR";
   }
 
   // Check if error is server error
@@ -622,22 +663,22 @@ class ApiService {
   // Get user-friendly error message
   getErrorMessage(error: any): string {
     if (this.isNetworkError(error)) {
-      return 'Unable to connect to server. Please check your internet connection.';
+      return "Unable to connect to server. Please check your internet connection.";
     }
-    
+
     if (this.isAuthError(error)) {
-      return 'Your session has expired. Please log in again.';
+      return "Your session has expired. Please log in again.";
     }
-    
+
     if (this.isAuthorizationError(error)) {
-      return 'You do not have permission to perform this action.';
+      return "You do not have permission to perform this action.";
     }
-    
+
     if (this.isServerError(error)) {
-      return 'Server error occurred. Please try again later.';
+      return "Server error occurred. Please try again later.";
     }
-    
-    return error.message || 'An unexpected error occurred.';
+
+    return error.message || "An unexpected error occurred.";
   }
 }
 

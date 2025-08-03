@@ -21,7 +21,6 @@ import { investmentsService } from "../../services/investments";
 import toast from "react-hot-toast";
 import { useForm } from "react-hook-form";
 import { PaginatedSchedule } from "../../components/common/Paggination";
-import CreateRemarksForm from "../../components/common/CreateRemarksForm";
 import CreateRemarksFormPR from "../../components/common/CreateRemarksForPR";
 
 interface InvestmentDetailsProps {
@@ -767,7 +766,6 @@ const InvestmentDetails: React.FC<InvestmentDetailsProps> = ({
               </motion.div>
             )}
 
-            {}
             {activeTab === "requestPrincipal" && (
               <motion.div
                 initial={{ opacity: 0, x: 20 }}

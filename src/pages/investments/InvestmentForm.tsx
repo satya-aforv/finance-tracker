@@ -13,10 +13,11 @@ import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { investorsService } from "../../services/investors";
 import { plansService } from "../../services/plans";
 import { investmentsService } from "../../services/investments";
-import { Investor, Plan, CalculationResult } from "../../types";
+import { Investor, Plan, CalculationResult, Investment } from "../../types";
 import toast from "react-hot-toast";
 
 interface InvestmentFormProps {
+  investment?: Investment;
   onSubmit: (data: any) => void;
   onCancel: () => void;
 }
@@ -30,9 +31,14 @@ interface FormData {
 }
 
 const InvestmentForm: React.FC<InvestmentFormProps> = ({
+  investment,
   onSubmit,
   onCancel,
 }) => {
+  const [investmentData, setInvestmentData] = useState<Investment | null>(
+    investment ? investment : null
+  );
+  const [editForm, setEditForm] = useState(false);
   const [investors, setInvestors] = useState<Investor[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
@@ -58,6 +64,24 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({
   const watchPlan = useWatch({ control, name: "plan" });
   const watchPrincipalAmount = useWatch({ control, name: "principalAmount" });
   const watchInvestor = useWatch({ control, name: "investor" });
+
+  useEffect(() => {
+    console.log(investment, "investment");
+    setEditForm(investment ? true : false);
+  }, [investment]);
+
+  useEffect(() => {
+    if (investment) {
+      setValue("investor", investment.investor._id);
+      setValue("plan", investment.plan._id);
+      setValue("principalAmount", investment.principalAmount);
+      setValue(
+        "investmentDate",
+        new Date(investment.investmentDate).toISOString().split("T")[0]
+      );
+      setValue("notes", investment.notes || "");
+    }
+  }, [investment, setValue]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -521,7 +545,7 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({
           loading={isSubmitting}
           disabled={!calculationResult || calculating}
         >
-          Create Investment
+          {editForm ? "Update Investment" : "Create Investment"}
         </Button>
       </div>
     </form>
