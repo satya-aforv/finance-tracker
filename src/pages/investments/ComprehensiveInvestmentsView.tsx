@@ -27,6 +27,7 @@ import {
   CreditCard,
   Receipt,
   CircleDollarSign,
+  InfoIcon,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm, useWatch } from "react-hook-form";
@@ -41,6 +42,7 @@ import InvestmentPaymentForm from "./InvestmentPaymentForm";
 import CreateRemarksForm from "../../components/common/CreateRemarksForm";
 import { PaginatedSchedule } from "../../components/common/Paggination";
 import CreateRemarksFormPR from "../../components/common/CreateRemarksForPR";
+import { Tooltip } from "react-tooltip";
 
 const Button = ({
   children,
@@ -153,7 +155,9 @@ const ComprehensiveInvestmentsView = ({
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showInvestmentForm, setShowInvestmentForm] = useState(false);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState(
+    user?.role == "investor" ? "payment_details" : "overview"
+  );
   const [selectedPlanOption, setSelectedPlanOption] = useState("existing"); // 'existing' or 'new'
   const investorId = investmentsData?.investor?._id || "";
   // Check if user can manage (admin/finance_manager)
@@ -169,6 +173,11 @@ const ComprehensiveInvestmentsView = ({
   const [showPaymentSchedule, setShowPaymentSchedule] = useState(false);
   // Fetch investor data
 
+  const [extendedInvestment, setExtendedInvestment] = useState({
+    extantionRequestDate: "",
+    investmentTenure: "",
+  });
+
   const [principalAmountRequestedData, setPrincipalAmountRequestedData] =
     useState({
       paymentType: "",
@@ -177,6 +186,14 @@ const ComprehensiveInvestmentsView = ({
       status: "pending",
       remarks: [],
     });
+
+  useEffect(() => {
+    if (investmentId) {
+      setExtendedInvestment({
+        extantionRequestDate: investmentData?.investmentDate,
+      });
+    }
+  }, []);
 
   useEffect(() => {
     const fetchInvestorData = async () => {
@@ -243,6 +260,26 @@ const ComprehensiveInvestmentsView = ({
     }).format(numericAmount);
   };
 
+  const handleSubmitInvestmentRequest = async () => {
+    try {
+      if (!investmentId) toast.error("Failed to retrive investment!");
+      const response: unknown = await investmentsService.investmentRequest(
+        investmentId,
+        extendedInvestment
+      );
+      if (!response) {
+        toast.error(response?.message || "Failed to raise a request!");
+        return;
+      }
+      toast.success(response?.message || "Request raised successfully!");
+      fetchInvestments();
+    } catch (error: unknown) {
+      console.log(error, "error");
+      toast.error(error?.message || "Failed to raise a request!");
+      return;
+    }
+  };
+
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString("en-IN", {
       year: "numeric",
@@ -259,6 +296,7 @@ const ComprehensiveInvestmentsView = ({
       completed: "bg-blue-100 text-blue-800",
       closed: "bg-gray-100 text-gray-800",
       defaulted: "bg-red-100 text-red-800",
+      pending: "bg-red-100 text-red-500",
     };
 
     return (
@@ -300,7 +338,11 @@ const ComprehensiveInvestmentsView = ({
 
   const handleRemarksSubmit = async (data) => {
     try {
-      await investmentsService.addRemarks(investmentId, data.remarks);
+      await investmentsService.addRemark(
+        investmentId,
+        paymentSchedule?._id,
+        data.remarks
+      );
       toast.success("Remarks added successfully");
       setShowRemarksForm(false);
 
@@ -371,6 +413,20 @@ const ComprehensiveInvestmentsView = ({
       console.error("Error fetching investment details:", error);
     }
   };
+
+  function isCurrentMonth(dateString: string) {
+    // Parse the input date string (assuming format is YYYY-MM or similar)
+    const inputDate = new Date(dateString);
+
+    // Get current date
+    const currentDate = new Date();
+
+    // Compare month and year
+    return (
+      inputDate.getMonth() === currentDate.getMonth() &&
+      inputDate.getFullYear() === currentDate.getFullYear()
+    );
+  }
 
   const getProgressCounts = () => {
     // Check if investment data exists
@@ -642,6 +698,11 @@ const ComprehensiveInvestmentsView = ({
             <nav className="-mb-px flex space-x-8 px-6">
               {[
                 { id: "overview", label: "Overview", icon: TrendingUp },
+                {
+                  id: "payment_details",
+                  label: "Payment Details",
+                  icon: TrendingUp,
+                },
                 { id: "schedule", label: "Payment Schedule", icon: Calendar },
                 { id: "documents", label: "Documents", icon: FileText },
                 { id: "timeline", label: "Activity Timeline", icon: Clock },
@@ -651,25 +712,47 @@ const ComprehensiveInvestmentsView = ({
                   label: "Principal Request",
                   icon: CircleDollarSign,
                 },
+                {
+                  id: "overview_investor",
+                  label: "Overview",
+                  icon: TrendingUp,
+                },
+                {
+                  id: "investment_extended",
+                  label: "Extend Investment",
+                  icon: TrendingUp,
+                },
               ].map((tab) => {
                 if (user?.role !== "admin" && tab.id === "referal") {
                   return null;
-                } else {
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
-                        activeTab === tab.id
-                          ? "border-blue-500 text-blue-600"
-                          : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                      }`}
-                    >
-                      <tab.icon className="h-4 w-4" />
-                      <span>{tab.label}</span>
-                    </button>
-                  );
                 }
+                if (
+                  user?.role === "investor" &&
+                  (tab.id === "overview" || tab.id === "schedule")
+                ) {
+                  return null;
+                }
+                if (
+                  user?.role !== "investor" &&
+                  (tab.id === "investment_extended" ||
+                    tab.id === "overview_investor")
+                ) {
+                  return null;
+                }
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                      activeTab === tab.id
+                        ? "border-blue-500 text-blue-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
+                  >
+                    <tab.icon className="h-4 w-4" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
               })}
             </nav>
           </div>
@@ -677,7 +760,7 @@ const ComprehensiveInvestmentsView = ({
           {/* Tab Content */}
           <div className="p-6">
             {/* Overview Tab */}
-            {activeTab === "overview" && (
+            {activeTab === "overview" && user?.role !== "investor" && (
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -991,6 +1074,279 @@ const ComprehensiveInvestmentsView = ({
               </motion.div>
             )}
 
+            {activeTab === "payment_details" && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="space-y-6"
+              >
+                {/* Quick Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg border border-green-200">
+                    <div className="flex items-center">
+                      <div className="p-3 bg-green-500 rounded-lg">
+                        <DollarSign className="h-6 w-6 text-white" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-green-700">
+                          Principal
+                        </p>
+                        <p className="text-xl font-bold text-green-900">
+                          {formatCurrency(investment.principalAmount)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg border border-blue-200">
+                    <div className="flex items-center">
+                      <div className="p-3 bg-blue-500 rounded-lg">
+                        <TrendingUp className="h-6 w-6 text-white" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-blue-700">
+                          Expected Returns
+                        </p>
+                        <p className="text-xl font-bold text-blue-900">
+                          {formatCurrency(investment.totalExpectedReturns)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-lg border border-purple-200">
+                    <div className="flex items-center">
+                      <div className="p-3 bg-purple-500 rounded-lg">
+                        <Calendar className="h-6 w-6 text-white" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-purple-700">
+                          Amount Paid
+                        </p>
+                        <p className="text-xl font-bold text-purple-900">
+                          {formatCurrency(investment.totalPaidAmount)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-lg border border-orange-200">
+                    <div className="flex items-center">
+                      <div className="p-3 bg-orange-500 rounded-lg">
+                        <Clock className="h-6 w-6 text-white" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-orange-700">
+                          Remaining
+                        </p>
+                        <p className="text-xl font-bold text-orange-900">
+                          {formatCurrency(investment.remainingAmount)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Progress Section */}
+                <div className="bg-white p-6 rounded-lg border border-gray-200">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Payment Progress
+                    </h3>
+                    <div className="text-right">
+                      <span className="text-2xl font-bold text-blue-600">
+                        {investment?.schedule &&
+                          investment?.schedule?.length > 0 &&
+                          investment?.schedule
+                            .map(
+                              (s) =>
+                                s.status == "paid" || s.status == "partial_paid"
+                            )
+                            .filter(Boolean).length}
+                      </span>
+                      <p className="text-xs text-gray-500">Completed</p>
+                    </div>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-4">
+                    <div
+                      className="bg-gradient-to-r from-blue-500 to-blue-600 h-4 rounded-full transition-all duration-500 ease-out"
+                      style={{ width: `${getProgressCounts()}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-500 mt-2">
+                    <span>
+                      Started: {formatDate(investment.investmentDate)} <br />
+                      Total Installments: {investment?.schedule?.length || 0}
+                    </span>
+                    <span>
+                      Pending Installments:{" "}
+                      {investment?.schedule
+                        ? investment?.schedule?.length -
+                          investment?.schedule
+                            .map(
+                              (s) =>
+                                s.status == "paid" || s.status == "partial_paid"
+                            )
+                            .filter(Boolean).length
+                        : 0}{" "}
+                      <br />
+                      Maturity: {formatDate(investment.maturityDate)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Payment Schedule
+                  </h3>
+                  <div className="text-sm text-gray-500">
+                    {investment?.schedule?.length} total payments
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto bg-white rounded-lg border border-gray-200">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Month
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Due Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Interest
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Principal
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Total Amount
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Paid Amount
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Balance
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Remarks
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {investment?.schedule &&
+                      investment?.schedule?.length > 0 ? (
+                        investment?.schedule.map((payment, index) => (
+                          <tr
+                            key={index}
+                            className="hover:bg-gray-50 transition-colors"
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              #{payment.month}
+                            </td>
+                            <td
+                              className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${
+                                isCurrentMonth(payment.dueDate)
+                                  ? "bg-amber-300 text-yellow-500"
+                                  : ""
+                              }`}
+                            >
+                              {formatDate(payment.dueDate)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {formatCurrency(payment.interestAmount)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {formatCurrency(payment.principalAmount)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {formatCurrency(payment.totalAmount)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
+                              {formatCurrency(payment.paidAmount)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-medium">
+                              {formatCurrency(
+                                payment.totalAmount - payment.paidAmount
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {getStatusBadge(payment.status)}
+                            </td>
+                            <td className="px-6 w-20 py-4 justify-space-between whitespace-nowrap">
+                              <div className="flex items-center space-x-2">
+                                <span title="Add Remarks">
+                                  <MessageCircleCode
+                                    onClick={() => {
+                                      setPaymentSchedule(payment);
+                                      setShowRemarksForm(true);
+                                    }}
+                                    className="h-5 w-5 text-blue-600 cursor-pointer"
+                                  />
+                                </span>
+
+                                <div>
+                                  <span
+                                    data-tooltip-id="payment-remarks-tooltip"
+                                    data-tooltip-html={`
+                                      <div class="p-2">
+                                        <div class="font-medium mb-2">${
+                                          payment.remarks ||
+                                          "Payment not yet done"
+                                        }</div>
+                                        <img src="${
+                                          payment.screenshotUrl
+                                        }" alt="Payment" class="rounded border border-gray-200 max-w-full" />
+                                        <div class="text-xs text-gray-500 mt-1">Payment ID: ${
+                                          payment.id || "N/A"
+                                        }</div>
+                                      </div>
+                                    `}
+                                    title="Payment Details"
+                                  >
+                                    <InfoIcon className="h-5 w-5 text-blue-600 cursor-pointer" />
+                                  </span>
+
+                                  <Tooltip id="payment-remarks-tooltip" />
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan={9}
+                            className="h-12 px-6 py-6 text-center"
+                          >
+                            <motion.div
+                              initial={{ opacity: 0, x: 20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                            >
+                              <div className="min-w-full text-center py-4 text-gray-500">
+                                <MessageCircleOffIcon className="mx-auto h-12 w-12 text-gray-400" />
+                                <p className="mt-2 text-lg">
+                                  No payment schedule available.
+                                </p>
+                                <p className="text-sm">
+                                  Once payments are scheduled, they will appear
+                                  here.
+                                </p>
+                              </div>
+                            </motion.div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </motion.div>
+            )}
+
             {/* Schedule Tab */}
             {activeTab === "schedule" && (
               <motion.div
@@ -1300,7 +1656,7 @@ const ComprehensiveInvestmentsView = ({
                       className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
-                  <div className="flex pt-7 justify-center min-w-full">
+                  <div className="flex pt-7 justify-end min-w-full">
                     <Button
                       type="button"
                       onClick={() => handleSubmitPrincipalAmount()}
@@ -1313,7 +1669,7 @@ const ComprehensiveInvestmentsView = ({
                         !principalAmountRequestedData?.requestedDisbursementDate
                       }
                     >
-                      Submit
+                      Raise a request
                     </Button>
                   </div>
                 </div>
@@ -1377,6 +1733,304 @@ const ComprehensiveInvestmentsView = ({
                       </tr>
                     )}
                   />
+                </div>
+              </motion.div>
+            )}
+            {activeTab === "overview_investor" && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="space-y-6"
+              >
+                {/* Details Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Investment Details */}
+                  <div className="bg-white p-6 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <FileText className="h-5 w-5 mr-2 text-blue-500" />
+                      Investment Details
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Investment Date:</span>
+                        <span className="font-medium">
+                          {formatDate(investment.investmentDate)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Maturity Date:</span>
+                        <span className="font-medium">
+                          {formatDate(investment.maturityDate)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Interest Rate:</span>
+                        <span className="font-medium text-green-600">
+                          {investment.interestRate}% per month
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Interest Type:</span>
+                        <span className="font-medium capitalize">
+                          {investment.interestType}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Tenure:</span>
+                        <span className="font-medium">
+                          {investment.tenure} months
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2">
+                        <span className="text-gray-600">Status:</span>
+                        {isEditing ? (
+                          <select
+                            value={editData.status}
+                            onChange={(e) =>
+                              setEditData({
+                                ...editData,
+                                status: e.target.value as any,
+                              })
+                            }
+                            className="border border-gray-300 rounded px-2 py-1 text-sm"
+                          >
+                            <option value="active">Active</option>
+                            <option value="completed">Completed</option>
+                            <option value="closed">Closed</option>
+                            <option value="defaulted">Defaulted</option>
+                          </select>
+                        ) : (
+                          getStatusBadge(investment.status)
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Investor Details */}
+                  <div className="bg-white p-6 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <User className="h-5 w-5 mr-2 text-blue-500" />
+                      Investor Details
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Name:</span>
+                        <span className="font-medium">
+                          {investment?.investor?.name}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Investor ID:</span>
+                        <span className="font-medium text-blue-600">
+                          {investment?.investor?.investorId}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Email:</span>
+                        <span className="font-medium">
+                          {investment?.investor?.email}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Phone:</span>
+                        <span className="font-medium">
+                          {investment?.investor?.phone}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Plan Details */}
+                <div className="bg-white p-6 rounded-lg border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Plan Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                      <p className="text-gray-600 text-sm">Plan Name</p>
+                      <p className="font-semibold text-lg">
+                        {investment?.plan?.name}
+                      </p>
+                    </div>
+                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                      <p className="text-gray-600 text-sm">Plan ID</p>
+                      <p className="font-semibold text-lg text-blue-600">
+                        {investment?.plan?.planId}
+                      </p>
+                    </div>
+                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                      <p className="text-gray-600 text-sm">Interest Type</p>
+                      <p className="font-semibold text-lg capitalize">
+                        {investment?.plan?.interestType}
+                      </p>
+                    </div>
+                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                      <p className="text-gray-600 text-sm">Tenure</p>
+                      <p className="font-semibold text-lg">
+                        {investment?.plan?.tenure} months
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Notes Section */}
+                <div className="bg-white p-6 rounded-lg border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Notes
+                  </h3>
+                  {isEditing ? (
+                    <textarea
+                      value={editData.notes}
+                      onChange={(e) =>
+                        setEditData({ ...editData, notes: e.target.value })
+                      }
+                      rows={4}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Add notes about this investment..."
+                    />
+                  ) : (
+                    <div className="text-gray-700">
+                      {investment?.notes ? (
+                        <p className="whitespace-pre-wrap">
+                          {investment?.notes}
+                        </p>
+                      ) : (
+                        <p className="text-gray-500 italic">
+                          No notes available
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+            {activeTab === "investment_extended" && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className=""
+              >
+                <div className="grid grid-cols-3 md:grid-cols-3 gap-4 mb-4">
+                  <div className="max-w-[300px]">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Existing Investment Date
+                    </label>
+                    <input
+                      value={
+                        extendedInvestment?.extantionRequestDate
+                          ? new Date(extendedInvestment.extantionRequestDate)
+                              .toISOString()
+                              .split("T")[0]
+                          : new Date(investment.investmentDate)
+                              .toISOString()
+                              .split("T")[0]
+                      }
+                      onChange={(e) => {
+                        setExtendedInvestment({
+                          ...extendedInvestment,
+                          extantionRequestDate: e.target.value,
+                        });
+                      }}
+                      type="date"
+                      className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="min-w-[400px]">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Investment Tenure
+                    </label>
+                    <input
+                      value={extendedInvestment?.investmentTenure || 0}
+                      type="number"
+                      onChange={(e) => {
+                        setExtendedInvestment({
+                          ...extendedInvestment,
+                          investmentTenure: e.target.value,
+                        });
+                      }}
+                      className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter investment amount"
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-3 pt-1 min-w-full text-right my-5">
+                    <Button
+                      onClick={() => handleSubmitInvestmentRequest()}
+                      type="button"
+                    >
+                      Raise a Request
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto bg-white rounded-lg border border-gray-200">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Sn
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Requested Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Requested Tenure
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {investment?.requestedForExtantion &&
+                      investment?.requestedForExtantion?.length > 0 ? (
+                        investment?.requestedForExtantion
+                          .slice(0, 10)
+                          .map((reqInvst, index) => (
+                            <tr
+                              key={index}
+                              className="hover:bg-gray-50 transition-colors"
+                            >
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {index + 1}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {formatDate(reqInvst.extantionRequestDate)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {reqInvst.investmentTenure}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {getStatusBadge(reqInvst.status)}
+                              </td>
+                            </tr>
+                          ))
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan={9}
+                            className="h-12 px-6 py-6 text-center"
+                          >
+                            <motion.div
+                              initial={{ opacity: 0, x: 20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                            >
+                              <div className="min-w-full text-center py-4 text-gray-500">
+                                <MessageCircleOffIcon className="mx-auto h-12 w-12 text-gray-400" />
+                                <p className="mt-2 text-lg">
+                                  No request available.
+                                </p>
+                                <p className="text-sm">
+                                  Once payments are scheduled, they will appear
+                                  here.
+                                </p>
+                              </div>
+                            </motion.div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </motion.div>
             )}

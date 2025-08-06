@@ -20,7 +20,7 @@ class ApiService {
     const baseURL = import.meta.env.DEV
       ? "/api" // This will use Vite's proxy
       : import.meta.env.VITE_API_URL ||
-        "https://finance-tracker-backend-f7fh.onrender.com/api";
+        "https://finance-tracker-backend-69gq.onrender.com/api";
 
     this.api = axios.create({
       baseURL,

@@ -7,17 +7,11 @@ import {
   AlertTriangle,
   CreditCard,
   FileText,
-  ArrowUpRight,
-  ArrowDownRight,
   Bell,
   Activity,
-  UserPlus,
   Plus,
-  BarChart3,
 } from "lucide-react";
 import {
-  LineChart,
-  Line,
   AreaChart,
   Area,
   XAxis,
@@ -25,11 +19,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
 } from "recharts";
 import StatCard from "../components/common/StatCard";
 import LoadingSpinner from "../components/common/LoadingSpinner";
@@ -42,7 +31,6 @@ import {
   PlanStats,
 } from "../types";
 import { motion } from "framer-motion";
-import toast from "react-hot-toast";
 
 interface DashboardData {
   stats: DashboardStats;
@@ -89,6 +77,7 @@ const DashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFreshUser, setIsFreshUser] = useState(false);
+  const [userOverview, setUserOverview] = useState(null);
 
   const isManager = user?.role === "admin" || user?.role === "finance_manager";
 
@@ -173,6 +162,45 @@ const DashboardPage: React.FC = () => {
 
     fetchDashboardData();
   }, [isManager]);
+
+  useEffect(() => {
+    const fetchUserDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Check if backend is available
+        const isConnected = await dashboardService.testConnection();
+        if (!isConnected) {
+          console.warn("Backend not available, using offline mode");
+          setDashboardData(getOfflineData());
+          setTrendingMetrics(getOfflineTrendingData());
+          setQuickActions(getOfflineQuickActions());
+          setIsFreshUser(true);
+          return;
+        }
+
+        const response = await dashboardService.getDashboardUserOverview();
+        console.log(response);
+        setUserOverview(response?.data);
+      } catch (error: any) {
+        console.error("Error fetching dashboard data:", error);
+        setError("Unable to load dashboard data. Working in offline mode.");
+
+        // Set default data for fresh users
+        setDashboardData(getOfflineData());
+        setTrendingMetrics(getOfflineTrendingData());
+        setQuickActions(getOfflineQuickActions());
+        setIsFreshUser(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user?.role == "investor") {
+      fetchUserDashboardData();
+    }
+  }, [user]);
 
   // Generate offline/default data for fresh users
   const getOfflineData = (): DashboardData => ({
@@ -471,7 +499,11 @@ const DashboardPage: React.FC = () => {
       >
         <StatCard
           title="Total Investments"
-          value={dashboardData.stats.totalInvestments || 0}
+          value={
+            dashboardData.stats.totalInvestments ||
+            userOverview?.totalInvestments ||
+            0
+          }
           icon={FileText}
           color="blue"
           change={
@@ -485,7 +517,11 @@ const DashboardPage: React.FC = () => {
         />
         <StatCard
           title="Active Investments"
-          value={dashboardData.stats.activeInvestments || 0}
+          value={
+            dashboardData.stats.activeInvestments ||
+            userOverview?.activeInvestments ||
+            0
+          }
           icon={TrendingUp}
           color="green"
           change={`${
@@ -495,7 +531,9 @@ const DashboardPage: React.FC = () => {
         />
         <StatCard
           title="Total Value"
-          value={formatCurrency(dashboardData.stats.totalValue || 0)}
+          value={formatCurrency(
+            dashboardData.stats.totalValue || userOverview?.totalValue || 0
+          )}
           icon={DollarSign}
           color="purple"
           change={
@@ -509,7 +547,9 @@ const DashboardPage: React.FC = () => {
         />
         <StatCard
           title="Returns Paid"
-          value={formatCurrency(dashboardData.stats.totalPaid || 0)}
+          value={formatCurrency(
+            dashboardData.stats.totalPaid || userOverview?.totalPaid || 0
+          )}
           icon={CreditCard}
           color="yellow"
           change={`${formatCurrency(

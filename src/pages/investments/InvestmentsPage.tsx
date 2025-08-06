@@ -539,37 +539,47 @@ const InvestmentsPage: React.FC = () => {
                               >
                                 <Eye className="h-4 w-4" />
                               </button>
-                              <button
-                                onClick={() => {
-                                  setSelectedInvestment(investment);
-                                  setShowEditModal(true);
-                                }}
-                                className="p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded transition-colors"
-                                title="Edit Investor"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => handleViewDetails(investment)}
-                                className="p-2 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-lg transition-colors"
-                                title="View Schedule"
-                              >
-                                <Calendar className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => handleViewDetails(investment)}
-                                className="p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded-lg transition-colors"
-                                title="View Documents"
-                              >
-                                <FileText className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => handleViewDetails(investment)}
-                                className="p-2 text-orange-600 hover:text-orange-900 hover:bg-orange-50 rounded-lg transition-colors"
-                                title="View Timeline"
-                              >
-                                <Clock className="h-4 w-4" />
-                              </button>
+                              {user?.role !== "investor" && (
+                                <>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedInvestment(investment);
+                                      setShowEditModal(true);
+                                    }}
+                                    className="p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded transition-colors"
+                                    title="Edit Investor"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      handleViewDetails(investment)
+                                    }
+                                    className="p-2 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-lg transition-colors"
+                                    title="View Schedule"
+                                  >
+                                    <Calendar className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      handleViewDetails(investment)
+                                    }
+                                    className="p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded-lg transition-colors"
+                                    title="View Documents"
+                                  >
+                                    <FileText className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      handleViewDetails(investment)
+                                    }
+                                    className="p-2 text-orange-600 hover:text-orange-900 hover:bg-orange-50 rounded-lg transition-colors"
+                                    title="View Timeline"
+                                  >
+                                    <Clock className="h-4 w-4" />
+                                  </button>
+                                </>
+                              )}
                             </div>
                           </td>
                         </tr>

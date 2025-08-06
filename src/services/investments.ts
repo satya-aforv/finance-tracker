@@ -58,6 +58,13 @@ export const investmentsService = {
     );
   },
 
+  async investmentRequest(
+    id: string,
+    data: unknown
+  ): Promise<ApiResponse<unknown>> {
+    return api.post(`/investments/${id}/extendInvestment`, data);
+  },
+
   async addRemark(
     id: string,
     scheduleId: string,

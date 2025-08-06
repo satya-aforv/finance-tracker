@@ -26,7 +26,7 @@ export default defineConfig(({ mode }) => {
             proxy.on("error", (err, _req, _res) => {
               console.log("🔴 Backend proxy error:", err.message);
               console.log(
-                "💡 Make sure your backend is running on https://finance-tracker-backend-f7fh.onrender.com"
+                "💡 Make sure your backend is running on https://finance-tracker-backend-69gq.onrender.com"
               );
               console.log("💡 Start backend with: cd backend && npm run dev");
             });
@@ -72,7 +72,7 @@ export default defineConfig(({ mode }) => {
       // Replace env variables at build time
       __API_URL__: JSON.stringify(
         process.env.VITE_API_URL ||
-          "https://finance-tracker-backend-f7fh.onrender.com/api"
+          "https://finance-tracker-backend-69gq.onrender.com/api"
       ),
     },
     optimizeDeps: {
