@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -115,6 +115,10 @@ export default function UserProfile({
       title: "Senior Investment Analyst",
     }
   );
+
+  useEffect(() => {
+    console.log(user, "user");
+  }, [user]);
 
   const [editData, setEditData] = useState<UserData | null>(userData);
 

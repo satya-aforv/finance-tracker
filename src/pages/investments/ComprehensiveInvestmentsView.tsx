@@ -583,13 +583,13 @@ const ComprehensiveInvestmentsView = ({
             {investor && (
               <div className="flex items-center space-x-3">
                 {getStatusBadge(investor?.status)}
-                <Button
+                {/* <Button
                   onClick={() => setShowInvestmentForm(true)}
                   className="bg-green-600 hover:bg-green-700"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Investment
-                </Button>
+                </Button> */}
               </div>
             )}
           </div>

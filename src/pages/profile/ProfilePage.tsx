@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -160,6 +160,10 @@ export default function UserProfile({
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  useEffect(() => {
+    console.log(user, "user");
+  }, [user]);
 
   const handleEdit = () => {
     if (!userData) return;

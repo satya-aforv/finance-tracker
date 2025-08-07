@@ -530,13 +530,13 @@ const PlansPage: React.FC = () => {
                             >
                               <Calculator className="h-4 w-4" />
                             </button>
-                            <button
+                            {/* <button
                               onClick={() => handleCopyPlan(plan)}
                               className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded transition-colors"
                               title="Copy Plan"
                             >
                               <Copy className="h-4 w-4" />
-                            </button>
+                            </button> */}
                             <button
                               onClick={() => {
                                 setSelectedPlan(plan);
