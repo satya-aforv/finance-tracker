@@ -23,6 +23,7 @@ import PlanForm from "./PlanForm";
 import PlanCalculator from "./PlanCalculator";
 import PlanFilter, { PlanFilterValues } from "./PlanFilter";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 
 const SEARCH_STORAGE_KEY = "plansSearchTerm";
 const PLAN_FILTERS_STORAGE_KEY = "plansFilters";
@@ -70,6 +71,7 @@ const PlansPage: React.FC = () => {
   const [planFilters, setPlanFilters] = useState<PlanFilterValues>(
     getInitialPlanFilters()
   );
+  const { user } = useAuth();
 
   const fetchPlans = async () => {
     try {

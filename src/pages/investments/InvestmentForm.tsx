@@ -30,6 +30,18 @@ interface FormData {
   notes: string;
 }
 
+export const getPaymentFrequency = (plan: Plan) => {
+  if (plan.paymentType === "interest" && plan.interestPayment) {
+    return plan.interestPayment.interestFrequency;
+  } else if (
+    plan.paymentType === "interestWithPrincipal" &&
+    plan.interestWithPrincipalPayment
+  ) {
+    return plan.interestWithPrincipalPayment.paymentFrequency;
+  }
+  return "Not configured";
+};
+
 const InvestmentForm: React.FC<InvestmentFormProps> = ({
   investment,
   onSubmit,
@@ -162,18 +174,6 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({
     return paymentType === "interest"
       ? "Interest Only"
       : "Interest + Principal";
-  };
-
-  const getPaymentFrequency = (plan: Plan) => {
-    if (plan.paymentType === "interest" && plan.interestPayment) {
-      return plan.interestPayment.interestFrequency;
-    } else if (
-      plan.paymentType === "interestWithPrincipal" &&
-      plan.interestWithPrincipalPayment
-    ) {
-      return plan.interestWithPrincipalPayment.paymentFrequency;
-    }
-    return "Not configured";
   };
 
   const validateAmount = (amount: number) => {

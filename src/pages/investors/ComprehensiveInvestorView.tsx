@@ -39,6 +39,7 @@ import InvestmentPaymentForm from "../investments/InvestmentPaymentForm";
 import CreateRemarksForm from "../../components/common/CreateRemarksForm";
 import { PaginatedSchedule } from "../../components/common/Paggination";
 import { Investment } from "../../types";
+import { getPaymentFrequency } from "../investments/InvestmentForm";
 
 const Button = ({
   children,
@@ -149,7 +150,7 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
   const [loading, setLoading] = useState(true);
   const [showInvestmentForm, setShowInvestmentForm] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
-  const [selectedPlanOption, setSelectedPlanOption] = useState("existing"); // 'existing' or 'new'
+  // const [selectedPlanOption, setSelectedPlanOption] = useState("existing"); // 'existing' or 'new'
   const [expandedId, setExpandedId] = useState(null);
   const [investmentActiveTab, setInvestmentActiveTab] = useState("schedule");
   const [showRemarksForm, setShowRemarksForm] = useState(false);
@@ -223,7 +224,7 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
     if (investment?._id) {
       fetchInvestment(investment?._id);
     }
-  }, [investment?._id]);
+  }, [investment?._id, showInvestmentForm]);
 
   const formatCurrency = (amount) => {
     const numericAmount = parseFloat(amount) || 0;
@@ -1165,7 +1166,9 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
           investment={investment}
           paymentSchedule={paymentSchedule}
           onSubmit={handleRemarksSubmit}
-          onCancel={() => setShowPaymentSchedule(false)}
+          onCancel={() => {
+            setShowPaymentSchedule(false);
+          }}
         />
       </Modal>
     </div>
@@ -1174,7 +1177,7 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
 
 // Investment Creation Form Component
 const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
-  const [selectedPlanOption, setSelectedPlanOption] = useState("existing");
+  // const [selectedPlanOption, setSelectedPlanOption] = useState("existing");
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [calculationResult, setCalculationResult] = useState(null);
   const [calculating, setCalculating] = useState(false);
@@ -1186,6 +1189,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
     handleSubmit,
     watch,
     setValue,
+    getValues,
     control,
     formState: { errors },
   } = useForm({
@@ -1194,7 +1198,6 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
       notes: "",
       principalAmount: "",
       planMode: "",
-      existingPlanId: "",
       plan: "",
       // New plan fields with complete payment structure
       customPlan: {
@@ -1210,7 +1213,6 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
         features: [],
         isActive: false,
         disbursementDate: "",
-        paymentType: "interest",
         // Interest Payment Configuration
         interestPayment: {
           dateOfInvestment: new Date().toISOString().split("T")[0],
@@ -1219,6 +1221,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
           principalRepaymentOption: "fixed",
           withdrawalAfterPercentage: 50,
           principalSettlementTerm: 12,
+          interestStartDate: "",
         },
         // Interest with Principal Payment Configuration
         interestWithPrincipalPayment: {
@@ -1235,8 +1238,8 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
 
   const watchPlan = watch("plan");
   const watchPrincipalAmount = watch("principalAmount");
-  const watchNewPlan = watch("newPlan");
-  const watchInvestmentPlanMode = watch("investment.planMode");
+  const watchNewPlan = watch("customPlan");
+  const watchInvestmentPlanMode = watch("planMode");
 
   const getPaymentTypeLabel = (paymentType: string) => {
     return paymentType === "interest"
@@ -1246,17 +1249,17 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
 
   const watchPaymentType = useWatch({
     control,
-    name: "investment.customPlan.paymentType",
+    name: "customPlan.paymentType",
   });
 
   useEffect(() => {
-    if (selectedPlanOption === "existing" && watchPlan) {
+    if (planMode === "existing" && watchPlan) {
       const plan = plans.find((p) => p._id === watchPlan);
       setSelectedPlan(plan || null);
-    } else if (selectedPlanOption === "new") {
+    } else if (planMode === "new") {
       setSelectedPlan(watchNewPlan);
     }
-  }, [selectedPlanOption, watchPlan, watchNewPlan, plans]);
+  }, [planMode, watchPlan, watchNewPlan, plans]);
 
   useEffect(() => {
     if (
@@ -1280,7 +1283,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
       setCalculating(true);
       let response;
 
-      if (selectedPlanOption === "existing") {
+      if (planMode === "existing") {
         response = await investmentsService.calculateReturns({
           planId: selectedPlan._id,
           principalAmount: principalAmount,
@@ -1336,15 +1339,19 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
 
       let planToUse;
 
-      if (selectedPlanOption === "new") {
+      if (planMode === "new") {
         // Create the plan first
         const planResponse = await plansService.createPlan({
-          ...data.newPlan,
+          ...data.customPlan,
           isActive: true,
         });
         planToUse = planResponse.data._id;
       } else {
         planToUse = data.plan;
+      }
+
+      if (!planToUse) {
+        toast.error("Plan is not configured correctly!");
       }
 
       await onSubmit({
@@ -1405,16 +1412,16 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
               <input
                 type="number"
                 step="0.01"
-                {...register("investment.principalAmount", {
+                {...register("principalAmount", {
                   valueAsNumber: true,
                   min: { value: 0, message: "Amount >= 0" },
                 })}
                 className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="100000"
               />
-              {errors.investment?.principalAmount && (
+              {errors.principalAmount && (
                 <p className="mt-1 text-sm text-red-600">
-                  {errors.investment.principalAmount.message}
+                  {errors.principalAmount.message}
                 </p>
               )}
             </div>
@@ -1424,7 +1431,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
               </label>
               <input
                 type="date"
-                {...register("investment.investmentDate")}
+                {...register("investmentDate")}
                 className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -1488,15 +1495,15 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
               Add Plan
             </label>
             <select
-              {...register("investment.planMode")}
+              {...register("planMode")}
               value={planMode || watchInvestmentPlanMode || ""}
               onChange={(e) => {
                 const v = e.target.value as "existing" | "new" | "";
                 setPlanMode(v);
                 if (v === "existing") {
-                  setValue("investment.customPlan", {}); // reset custom plan fields
+                  setValue("customPlan", {}); // reset custom plan fields
                 } else if (v === "new") {
-                  setValue("investment.existingPlanId", ""); // reset existing plan id
+                  setValue("plan", ""); // reset existing plan id
                 }
               }}
               className="block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500
@@ -1515,7 +1522,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                 Existing Plan
               </label>
               <select
-                {...register("investment.existingPlanId")}
+                {...register("plan")}
                 className="block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Select Existing Plan</option>
@@ -1544,15 +1551,15 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                     Plan Name *
                   </label>
                   <input
-                    {...register("investment.customPlan.name", {
+                    {...register("customPlan.name", {
                       required: "Plan name is required",
                     })}
                     className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter plan name"
                   />
-                  {errors.investment?.customPlan?.name && (
+                  {errors.customPlan?.name && (
                     <p className="mt-1 text-sm text-red-600">
-                      {errors.investment.customPlan.name.message}
+                      {errors.customPlan.name.message}
                     </p>
                   )}
                 </div>
@@ -1561,7 +1568,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                     Description
                   </label>
                   <textarea
-                    {...register("investment.customPlan.description")}
+                    {...register("customPlan.description")}
                     rows={3}
                     className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter plan description"
@@ -1578,7 +1585,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                   <input
                     type="number"
                     step="0.01"
-                    {...register("investment.customPlan.interestRate", {
+                    {...register("customPlan.interestRate", {
                       required: "Interest rate is required",
                       min: {
                         value: 0,
@@ -1592,9 +1599,9 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                     className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="2.5"
                   />
-                  {errors.investment?.customPlan?.interestRate && (
+                  {errors.customPlan?.interestRate && (
                     <p className="mt-1 text-sm text-red-600">
-                      {errors.investment.customPlan.interestRate.message}
+                      {errors.customPlan.interestRate.message}
                     </p>
                   )}
                 </div>
@@ -1603,7 +1610,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                     Interest Type *
                   </label>
                   <select
-                    {...register("investment.customPlan.interestType", {
+                    {...register("customPlan.interestType", {
                       required: "Interest type is required",
                     })}
                     className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
@@ -1612,9 +1619,9 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                     <option value="flat">Flat Interest</option>
                     <option value="reducing">Reducing Balance</option>
                   </select>
-                  {errors.investment?.customPlan?.interestType && (
+                  {errors.customPlan?.interestType && (
                     <p className="mt-1 text-sm text-red-600">
-                      {errors.investment.customPlan.interestType.message}
+                      {errors.customPlan.interestType.message}
                     </p>
                   )}
                 </div>
@@ -1624,7 +1631,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                   </label>
                   <input
                     type="number"
-                    {...register("investment.customPlan.tenure", {
+                    {...register("customPlan.tenure", {
                       required: "Tenure is required",
                       min: {
                         value: 1,
@@ -1638,9 +1645,9 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                     className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="12"
                   />
-                  {errors.investment?.customPlan?.tenure && (
+                  {errors.customPlan?.tenure && (
                     <p className="mt-1 text-sm text-red-600">
-                      {errors.investment.customPlan.tenure.message}
+                      {errors.customPlan.tenure.message}
                     </p>
                   )}
                 </div>
@@ -1649,7 +1656,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                     Risk Level
                   </label>
                   <select
-                    {...register("investment.customPlan.riskLevel")}
+                    {...register("customPlan.riskLevel")}
                     className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="low">Low Risk</option>
@@ -1663,7 +1670,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                   </label>
                   <input
                     type="number"
-                    {...register("investment.customPlan.minInvestment", {
+                    {...register("customPlan.minInvestment", {
                       required: "Minimum investment is required",
                       min: {
                         value: 1000,
@@ -1673,9 +1680,9 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                     className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="50000"
                   />
-                  {errors.investment?.customPlan?.minInvestment && (
+                  {errors.customPlan?.minInvestment && (
                     <p className="mt-1 text-sm text-red-600">
-                      {errors.investment.customPlan.minInvestment.message}
+                      {errors.customPlan.minInvestment.message}
                     </p>
                   )}
                 </div>
@@ -1685,16 +1692,14 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                   </label>
                   <input
                     type="number"
-                    {...register("investment.customPlan.maxInvestment", {
+                    {...register("customPlan.maxInvestment", {
                       required: "Maximum investment is required",
                       min: {
                         value: 1000,
                         message: "Maximum investment must be at least ₹1,000",
                       },
                       validate: (value) => {
-                        const min = getValues(
-                          "investment.customPlan.minInvestment"
-                        );
+                        const min = getValues("customPlan.minInvestment");
                         return (
                           !min ||
                           value >= min ||
@@ -1705,16 +1710,16 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                     className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="1000000"
                   />
-                  {errors.investment?.customPlan?.maxInvestment && (
+                  {errors.customPlan?.maxInvestment && (
                     <p className="mt-1 text-sm text-red-600">
-                      {errors.investment.customPlan.maxInvestment.message}
+                      {errors.customPlan.maxInvestment.message}
                     </p>
                   )}
                 </div>
                 <div>
                   <label className="flex items-center">
                     <input
-                      {...register("investment.customPlan.isActive")}
+                      {...register("customPlan.isActive")}
                       type="checkbox"
                       className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
                     />
@@ -1738,7 +1743,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <label className="relative cursor-pointer">
                         <input
-                          {...register("investment.customPlan.paymentType")}
+                          {...register("customPlan.paymentType")}
                           type="radio"
                           value="interest"
                           className="sr-only"
@@ -1777,7 +1782,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
 
                       <label className="relative cursor-pointer">
                         <input
-                          {...register("investment.customPlan.paymentType")}
+                          {...register("customPlan.paymentType")}
                           type="radio"
                           value="interestWithPrincipal"
                           className="sr-only"
@@ -1818,7 +1823,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
               </div>
 
               {/* Payment Configuration */}
-              {watch("investment.customPlan.paymentType") === "interest" && (
+              {watch("customPlan.paymentType") === "interest" && (
                 <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 mt-4">
                   <h4 className="text-md font-medium text-blue-900 mb-4 flex items-center">
                     Interest Payment Configuration
@@ -1830,7 +1835,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                       </label>
                       <select
                         {...register(
-                          "investment.customPlan.interestPayment.interestFrequency",
+                          "customPlan.interestPayment.interestFrequency",
                           { required: "Interest frequency is required" }
                         )}
                         className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
@@ -1842,26 +1847,25 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                         <option value="yearly">Yearly</option>
                         <option value="others">Others (Custom)</option>
                       </select>
-                      {errors.investment?.customPlan?.interestPayment
+                      {errors.customPlan?.interestPayment
                         ?.interestFrequency && (
                         <p className="mt-1 text-sm text-red-600">
                           {
-                            errors.investment.customPlan.interestPayment
-                              .interestFrequency.message
+                            errors.customPlan.interestPayment.interestFrequency
+                              .message
                           }
                         </p>
                       )}
                     </div>
-                    {watch(
-                      "investment.customPlan.interestPayment.interestFrequency"
-                    ) === "others" ? (
+                    {watch("customPlan.interestPayment.interestFrequency") ===
+                    "others" ? (
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
                           Custom Interest Start Date
                         </label>
                         <input
                           {...register(
-                            "investment.customPlan.interestPayment.interestStartDate"
+                            "customPlan.interestPayment.interestStartDate"
                           )}
                           type="date"
                           className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
@@ -1873,9 +1877,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                           Disbursement date
                         </label>
                         <input
-                          {...register(
-                            "investment.customPlan.disbursementDate"
-                          )}
+                          {...register("customPlan.disbursementDate")}
                           type="date"
                           className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                         />
@@ -1889,7 +1891,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                         <label className="flex items-center">
                           <input
                             {...register(
-                              "investment.customPlan.interestPayment.principalRepaymentOption"
+                              "customPlan.interestPayment.principalRepaymentOption"
                             )}
                             type="radio"
                             value="fixed"
@@ -1902,7 +1904,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                         <label className="flex items-center">
                           <input
                             {...register(
-                              "investment.customPlan.interestPayment.principalRepaymentOption"
+                              "customPlan.interestPayment.principalRepaymentOption"
                             )}
                             type="radio"
                             value="flexible"
@@ -1915,7 +1917,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                       </div>
                     </div>
                     {watch(
-                      "investment.customPlan.interestPayment.principalRepaymentOption"
+                      "customPlan.interestPayment.principalRepaymentOption"
                     ) === "flexible" && (
                       <>
                         <div>
@@ -1924,7 +1926,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                           </label>
                           <input
                             {...register(
-                              "investment.customPlan.interestPayment.withdrawalAfterPercentage"
+                              "customPlan.interestPayment.withdrawalAfterPercentage"
                             )}
                             type="number"
                             min="0"
@@ -1942,7 +1944,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                           </label>
                           <input
                             {...register(
-                              "investment.customPlan.interestPayment.principalSettlementTerm"
+                              "customPlan.interestPayment.principalSettlementTerm"
                             )}
                             type="number"
                             min="1"
@@ -1959,8 +1961,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                 </div>
               )}
 
-              {watch("investment.customPlan.paymentType") ===
-                "interestWithPrincipal" && (
+              {watch("customPlan.paymentType") === "interestWithPrincipal" && (
                 <div className="bg-green-50 p-6 rounded-lg border border-green-200 mt-4">
                   <h4 className="text-md font-medium text-green-900 mb-4 flex items-center">
                     Interest + Principal Payment Configuration
@@ -1972,7 +1973,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                       </label>
                       <input
                         {...register(
-                          "investment.customPlan.interestWithPrincipalPayment.principalRepaymentPercentage",
+                          "customPlan.interestWithPrincipalPayment.principalRepaymentPercentage",
                           {
                             required:
                               "Principal repayment percentage is required",
@@ -1991,13 +1992,11 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                         className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="10"
                       />
-                      {errors.investment?.customPlan
-                        ?.interestWithPrincipalPayment
+                      {errors.customPlan?.interestWithPrincipalPayment
                         ?.principalRepaymentPercentage && (
                         <p className="mt-1 text-sm text-red-600">
                           {
-                            errors.investment.customPlan
-                              .interestWithPrincipalPayment
+                            errors.customPlan.interestWithPrincipalPayment
                               .principalRepaymentPercentage.message
                           }
                         </p>
@@ -2012,7 +2011,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                       </label>
                       <select
                         {...register(
-                          "investment.customPlan.interestWithPrincipalPayment.paymentFrequency",
+                          "customPlan.interestWithPrincipalPayment.paymentFrequency",
                           {
                             required: "Payment frequency is required",
                           }
@@ -2026,19 +2025,18 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                         <option value="yearly">Yearly</option>
                         <option value="others">Others (Custom)</option>
                       </select>
-                      {errors.investment?.customPlan
-                        ?.interestWithPrincipalPayment?.paymentFrequency && (
+                      {errors.customPlan?.interestWithPrincipalPayment
+                        ?.paymentFrequency && (
                         <p className="mt-1 text-sm text-red-600">
                           {
-                            errors.investment.customPlan
-                              .interestWithPrincipalPayment.paymentFrequency
-                              .message
+                            errors.customPlan.interestWithPrincipalPayment
+                              .paymentFrequency.message
                           }
                         </p>
                       )}
                     </div>
                     {watch(
-                      "investment.customPlan.interestWithPrincipalPayment.paymentFrequency"
+                      "customPlan.interestWithPrincipalPayment.paymentFrequency"
                     ) === "others" && (
                       <>
                         <div>
@@ -2047,7 +2045,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                           </label>
                           <input
                             {...register(
-                              "investment.customPlan.interestWithPrincipalPayment.interestPayoutDate"
+                              "customPlan.interestWithPrincipalPayment.interestPayoutDate"
                             )}
                             type="date"
                             className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
@@ -2059,7 +2057,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                           </label>
                           <input
                             {...register(
-                              "investment.customPlan.interestWithPrincipalPayment.principalPayoutDate"
+                              "customPlan.interestWithPrincipalPayment.principalPayoutDate"
                             )}
                             type="date"
                             className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
@@ -2077,7 +2075,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                   Features (comma-separated)
                 </label>
                 <textarea
-                  {...register("investment.customPlan.features")}
+                  {...register("customPlan.features")}
                   rows={2}
                   className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="High Returns, Monthly Payouts, Flexible Terms"
@@ -2093,7 +2091,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                   Disbursement date
                 </label>
                 <input
-                  {...register("investment.customPlan.disbursementDate")}
+                  {...register("customPlan.disbursementDate")}
                   type="date"
                   className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                 />
@@ -2108,7 +2106,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                   <div>
                     <span className="text-gray-600">Payment Type:</span>
                     <div className="font-medium">
-                      {watch("investment.customPlan.paymentType") === "interest"
+                      {watch("customPlan.paymentType") === "interest"
                         ? "Interest Only"
                         : "Interest + Principal"}
                     </div>
@@ -2116,20 +2114,19 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
                   <div>
                     <span className="text-gray-600">Interest Rate:</span>
                     <div className="font-medium">
-                      {watch("investment.customPlan.interestRate") || 0}% per
-                      month
+                      {watch("customPlan.interestRate") || 0}% per month
                     </div>
                   </div>
                   <div>
                     <span className="text-gray-600">Tenure:</span>
                     <div className="font-medium">
-                      {watch("investment.customPlan.tenure") || 0} months
+                      {watch("customPlan.tenure") || 0} months
                     </div>
                   </div>
                   <div>
                     <span className="text-gray-600">Risk Level:</span>
                     <div className="font-medium capitalize">
-                      {watch("investment.customPlan.riskLevel")}
+                      {watch("customPlan.riskLevel")}
                     </div>
                   </div>
                 </div>
@@ -2239,7 +2236,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
         )}
 
         {/* Maturity Information */}
-        {selectedPlan && watch("investment.investmentDate") && (
+        {selectedPlan && watch("investmentDate") && (
           <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
             <h4 className="text-md font-medium text-yellow-900 mb-3 flex items-center">
               <Calendar className="h-5 w-5 mr-2" />
@@ -2249,18 +2246,16 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
               <div>
                 <span className="text-yellow-700">Start Date:</span>
                 <div className="font-medium">
-                  {new Date(
-                    watch("investment.investmentDate")
-                  ).toLocaleDateString("en-IN")}
+                  {new Date(watch("investmentDate")).toLocaleDateString(
+                    "en-IN"
+                  )}
                 </div>
               </div>
               <div>
                 <span className="text-yellow-700">Maturity Date:</span>
                 <div className="font-medium">
                   {(() => {
-                    const startDate = new Date(
-                      watch("investment.investmentDate")
-                    );
+                    const startDate = new Date(watch("investmentDate"));
                     const maturityDate = new Date(startDate);
                     maturityDate.setMonth(
                       maturityDate.getMonth() + selectedPlan.tenure
@@ -2333,6 +2328,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
           onClick={handleSubmit(handleFormSubmit)}
           loading={submitting}
           disabled={!calculationResult || calculating || submitting}
+          // disabled={submitting}
           className="bg-green-600 hover:bg-green-700"
         >
           Create Investment

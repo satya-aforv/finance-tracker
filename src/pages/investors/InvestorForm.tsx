@@ -426,7 +426,7 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
     { id: "basicDetails", label: "Basic Information" },
     { id: "address", label: "Address" },
     { id: "bankDetails", label: "Bank Details" },
-    { id: "investments", label: "Investments" },
+    // { id: "investments", label: "Investments" },
     { id: "referalPolicy", label: "Referral Policy" },
   ];
 
