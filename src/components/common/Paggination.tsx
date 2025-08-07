@@ -5,6 +5,7 @@ export function PaginatedSchedule({
   rowsPerPage = 6,
   renderRow,
   tableHead,
+  emptyMessage = "No data found",
 }) {
   const [page, setPage] = useState(1);
 
@@ -26,7 +27,7 @@ export function PaginatedSchedule({
               <td colSpan={9}>
                 <div className="min-w-full px-4 py-10 whitespace-nowrap text-xs text-gray-900 text-center">
                   <p className="text-md text-[16px] text-gray-500">
-                    No payments
+                    {emptyMessage || "No data found"}
                   </p>
                 </div>
               </td>

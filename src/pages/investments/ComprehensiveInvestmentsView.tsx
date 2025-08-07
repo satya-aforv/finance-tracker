@@ -28,6 +28,7 @@ import {
   Receipt,
   CircleDollarSign,
   InfoIcon,
+  Check,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm, useWatch } from "react-hook-form";
@@ -43,6 +44,8 @@ import CreateRemarksForm from "../../components/common/CreateRemarksForm";
 import { PaginatedSchedule } from "../../components/common/Paggination";
 import CreateRemarksFormPR from "../../components/common/CreateRemarksForPR";
 import { Tooltip } from "react-tooltip";
+import ConfirmationModal from "../../components/common/ConfirmationModal";
+import DeclineModal from "../../components/common/DeclineModal";
 
 const Button = ({
   children,
@@ -173,9 +176,15 @@ const ComprehensiveInvestmentsView = ({
   const [showPaymentSchedule, setShowPaymentSchedule] = useState(false);
   // Fetch investor data
 
+  const [confirmModalType, setConfirmModalType] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showDeclineModal, setShowDeclineModal] = useState(false);
+  const [principalRequest, setPrincipalRequest] = useState(false);
+  const [extInvestmentRequest, setExtInvestmentRequest] = useState(false);
+
   const [extendedInvestment, setExtendedInvestment] = useState({
-    extantionRequestDate: "",
-    investmentTenure: "",
+    extantionRequestTenure: null,
+    investmentTenure: null,
   });
 
   const [principalAmountRequestedData, setPrincipalAmountRequestedData] =
@@ -190,7 +199,8 @@ const ComprehensiveInvestmentsView = ({
   useEffect(() => {
     if (investmentId) {
       setExtendedInvestment({
-        extantionRequestDate: investmentData?.investmentDate,
+        ...extendedInvestment,
+        investmentTenure: investmentData?.tenure || null,
       });
     }
   }, []);
@@ -260,6 +270,61 @@ const ComprehensiveInvestmentsView = ({
     }).format(numericAmount);
   };
 
+  const handleConfirm = async (status: string = "Approved") => {
+    try {
+      const payload = { status: status };
+      const response: unknown = await investmentsService.updatePrRequestStatus(
+        investmentId,
+        principalRequest?._id,
+        payload
+      );
+      if (!response) {
+        toast.error(response?.message || "Failed to confirm investment!");
+        return;
+      }
+      await fetchInvestments();
+      toast.success(`Investment ${status} successfully!`);
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message || "Failed to confirm investment!"
+      );
+      return;
+    }
+  };
+
+  const handleConfirmExtendInvestmentRequest = async (
+    status: string = "Approved"
+  ) => {
+    try {
+      const payload = { status: status };
+      const response: unknown =
+        await investmentsService.updateExtendInvestmentRequest(
+          investmentId,
+          extInvestmentRequest?._id,
+          payload
+        );
+      if (!response) {
+        toast.error(response?.message || "Failed to confirm investment!");
+        return;
+      }
+      await fetchInvestments();
+      toast.success(`Investment ${status} successfully!`);
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message || "Failed to confirm investment!"
+      );
+      return;
+    }
+  };
+
+  const handleDeclineExtendInvestmentRequest = async () => {
+    handleConfirmExtendInvestmentRequest("Declined");
+  };
+
+  const handleDecline = () => {
+    handleConfirm("Declined");
+  };
+
   const handleSubmitInvestmentRequest = async () => {
     try {
       if (!investmentId) toast.error("Failed to retrive investment!");
@@ -297,6 +362,9 @@ const ComprehensiveInvestmentsView = ({
       closed: "bg-gray-100 text-gray-800",
       defaulted: "bg-red-100 text-red-800",
       pending: "bg-red-100 text-red-500",
+      Pending: "bg-red-100 text-red-500",
+      Declined: "bg-red-100 text-red-800",
+      rejected: "bg-red-100 text-red-800",
     };
 
     return (
@@ -713,6 +781,11 @@ const ComprehensiveInvestmentsView = ({
                   icon: CircleDollarSign,
                 },
                 {
+                  id: "principalRequests",
+                  label: "Principal Request",
+                  icon: CircleDollarSign,
+                },
+                {
                   id: "overview_investor",
                   label: "Overview",
                   icon: TrendingUp,
@@ -720,6 +793,11 @@ const ComprehensiveInvestmentsView = ({
                 {
                   id: "investment_extended",
                   label: "Extend Investment",
+                  icon: TrendingUp,
+                },
+                {
+                  id: "investment_requests",
+                  label: "Extantion Requests",
                   icon: TrendingUp,
                 },
               ].map((tab) => {
@@ -736,6 +814,18 @@ const ComprehensiveInvestmentsView = ({
                   user?.role !== "investor" &&
                   (tab.id === "investment_extended" ||
                     tab.id === "overview_investor")
+                ) {
+                  return null;
+                }
+                if (canManage && ["payment_details"].includes(tab.id)) {
+                  return null;
+                }
+                if (canManage && ["requestPrincipal"].includes(tab.id)) {
+                  return null;
+                }
+                if (
+                  user?.role !== "admin" &&
+                  ["principalRequests", "investment_requests"].includes(tab.id)
                 ) {
                   return null;
                 }
@@ -1576,7 +1666,7 @@ const ComprehensiveInvestmentsView = ({
               </motion.div>
             )}
 
-            {activeTab === "requestPrincipal" && (
+            {user?.role === "investor" && activeTab === "requestPrincipal" && (
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -1709,10 +1799,10 @@ const ComprehensiveInvestmentsView = ({
                           #{payment.month || idx}
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-xs font-xs text-gray-900">
-                          {formatDate(payment.requestedDisbursementDate)}
+                          {formatCurrency(payment.requestedAmount)}
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-xs font-xs text-gray-900">
-                          {formatCurrency(payment.requestedAmount)}
+                          {formatDate(payment.requestedDisbursementDate)}
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
                           {getStatusBadge(payment.status)}
@@ -1732,6 +1822,94 @@ const ComprehensiveInvestmentsView = ({
                         </td>
                       </tr>
                     )}
+                  />
+                </div>
+              </motion.div>
+            )}
+            {user?.role === "admin" && activeTab === "principalRequests" && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="space-y-4"
+              >
+                <div className="bg-white rounded-lg border border-gray-200  overflow-x-auto">
+                  <PaginatedSchedule
+                    schedule={investmentData?.principalRequest}
+                    rowsPerPage={6}
+                    tableHead={
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            SN
+                          </th>
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Requested Amount
+                          </th>
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Payout TImeline
+                          </th>
+
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                    }
+                    renderRow={(payment, idx) => (
+                      <tr
+                        key={idx}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
+                        <td className="px-4 py-4 whitespace-nowrap text-xs font-xs text-gray-900">
+                          #{payment.month || idx}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-xs font-xs text-gray-900">
+                          {formatDate(payment.requestedDisbursementDate)}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-xs font-xs text-gray-900">
+                          {formatCurrency(payment.requestedAmount)}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          {getStatusBadge(payment.status)}
+                        </td>
+                        <td className="px-4 w-20 py-4 justify-space-between whitespace-nowrap">
+                          <div className="flex items-center space-x-2">
+                            <span title="Add Remarks">
+                              {payment?.status === "Approved" ? (
+                                <Check className="h-5 w-5 text-green-400 cursor-not-allowed" />
+                              ) : (
+                                <Check
+                                  onClick={() => {
+                                    setPrincipalRequest(payment);
+                                    setShowConfirmModal(true);
+                                    setConfirmModalType("principalRequest");
+                                  }}
+                                  className="h-5 w-5 text-green-600 cursor-pointer"
+                                />
+                              )}
+                            </span>
+                            <span title="Add Remarks">
+                              {payment?.status === "Declined" ? (
+                                <X className="h-5 w-5 text-red-400 cursor-not-allowed" />
+                              ) : (
+                                <X
+                                  onClick={() => {
+                                    setPrincipalRequest(payment);
+                                    setShowDeclineModal(true);
+                                    setConfirmModalType("principalRequest");
+                                  }}
+                                  className="h-5 w-5 text-red-600 cursor-pointer"
+                                />
+                              )}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    emptyMessage="No requests found"
                   />
                 </div>
               </motion.div>
@@ -1914,39 +2092,35 @@ const ComprehensiveInvestmentsView = ({
                 <div className="grid grid-cols-3 md:grid-cols-3 gap-4 mb-4">
                   <div className="max-w-[300px]">
                     <label className="block text-sm font-medium text-gray-700">
-                      Existing Investment Date
+                      Existing Investment Tenure (months)
                     </label>
                     <input
                       value={
-                        extendedInvestment?.extantionRequestDate
-                          ? new Date(extendedInvestment.extantionRequestDate)
-                              .toISOString()
-                              .split("T")[0]
-                          : new Date(investment.investmentDate)
-                              .toISOString()
-                              .split("T")[0]
+                        extendedInvestment?.investmentTenure > 0
+                          ? extendedInvestment.investmentTenure
+                          : investmentData?.tenure
                       }
                       onChange={(e) => {
                         setExtendedInvestment({
                           ...extendedInvestment,
-                          extantionRequestDate: e.target.value,
+                          investmentTenure: e.target.value,
                         });
                       }}
-                      type="date"
+                      type="number"
                       className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
                   <div className="min-w-[400px]">
                     <label className="block text-sm font-medium text-gray-700">
-                      Investment Tenure
+                      Investment Tenure (months)
                     </label>
                     <input
-                      value={extendedInvestment?.investmentTenure || 0}
+                      value={extendedInvestment?.extantionRequestTenure || 0}
                       type="number"
                       onChange={(e) => {
                         setExtendedInvestment({
                           ...extendedInvestment,
-                          investmentTenure: e.target.value,
+                          extantionRequestTenure: e.target.value,
                         });
                       }}
                       className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
@@ -1957,6 +2131,9 @@ const ComprehensiveInvestmentsView = ({
                     <Button
                       onClick={() => handleSubmitInvestmentRequest()}
                       type="button"
+                      disabled={
+                        extendedInvestment?.extantionRequestTenure == null
+                      }
                     >
                       Raise a Request
                     </Button>
@@ -1971,7 +2148,7 @@ const ComprehensiveInvestmentsView = ({
                           Sn
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Requested Date
+                          Current Tenure
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Requested Tenure
@@ -1995,7 +2172,7 @@ const ComprehensiveInvestmentsView = ({
                                 {index + 1}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                {formatDate(reqInvst.extantionRequestDate)}
+                                {reqInvst.extantionRequestTenure}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 {reqInvst.investmentTenure}
@@ -2031,6 +2208,93 @@ const ComprehensiveInvestmentsView = ({
                       )}
                     </tbody>
                   </table>
+                </div>
+              </motion.div>
+            )}
+            {user?.role === "admin" && activeTab === "investment_requests" && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="space-y-4"
+              >
+                <div className="bg-white rounded-lg border border-gray-200  overflow-x-auto">
+                  <PaginatedSchedule
+                    schedule={investmentData?.requestedForExtantion}
+                    rowsPerPage={6}
+                    tableHead={
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            SN
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Current Tenure
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Requested Tenure
+                          </th>
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                    }
+                    renderRow={(payment, idx) => (
+                      <tr
+                        key={idx}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
+                        <td className="px-4 py-4 whitespace-nowrap text-xs font-xs text-gray-900">
+                          #{payment.month || idx}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-xs font-xs text-gray-900">
+                          {payment.investmentTenure}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-xs font-xs text-gray-900">
+                          {payment.extantionRequestTenure}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          {getStatusBadge(payment.status)}
+                        </td>
+                        <td className="px-4 w-20 py-4 justify-space-between whitespace-nowrap">
+                          <div className="flex items-center space-x-2">
+                            <span title="Add Remarks">
+                              {payment?.status === "Approved" ? (
+                                <Check className="h-5 w-5 text-green-400 cursor-not-allowed" />
+                              ) : (
+                                <Check
+                                  onClick={() => {
+                                    setExtInvestmentRequest(payment);
+                                    setShowConfirmModal(true);
+                                    setConfirmModalType("extInvestmentRequest");
+                                  }}
+                                  className="h-5 w-5 text-green-600 cursor-pointer"
+                                />
+                              )}
+                            </span>
+                            <span title="Add Remarks">
+                              {payment?.status === "Declined" ? (
+                                <X className="h-5 w-5 text-red-400 cursor-not-allowed" />
+                              ) : (
+                                <X
+                                  onClick={() => {
+                                    setExtInvestmentRequest(payment);
+                                    setShowDeclineModal(true);
+                                    setConfirmModalType("extInvestmentRequest");
+                                  }}
+                                  className="h-5 w-5 text-red-600 cursor-pointer"
+                                />
+                              )}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    emptyMessage="No requests found"
+                  />
                 </div>
               </motion.div>
             )}
@@ -2100,6 +2364,56 @@ const ComprehensiveInvestmentsView = ({
           onCancel={() => setShowRemarksForm(false)}
         />
       </Modal>
+
+      {/* <Modal
+        isOpen={showRemarksForm}
+        onClose={() => setShowConfirmModal(false)}
+        title={`Add Remarks for ${investmentData?.investmentId}`}
+        size="xl"
+      > */}
+      {confirmModalType == "principalRequest" ? (
+        <ConfirmationModal
+          isOpen={showConfirmModal}
+          onClose={() => setShowConfirmModal(false)}
+          onConfirm={handleConfirm}
+          title="Confirm Approve"
+          message="Are you sure you want to approve this item?"
+        />
+      ) : (
+        <ConfirmationModal
+          isOpen={showConfirmModal}
+          onClose={() => setShowConfirmModal(false)}
+          onConfirm={handleConfirmExtendInvestmentRequest}
+          title="Confirm Approve"
+          message="Are you sure you want to approve this item?"
+        />
+      )}
+
+      {/* </Modal> */}
+      {/* <Modal
+        isOpen={showRemarksForm}
+        onClose={() => setShowDeclineModal(false)}
+        title={`Add Remarks for ${investmentData?.investmentId}`}
+        size="xl"
+      > */}
+      {confirmModalType == "principalRequest" ? (
+        <DeclineModal
+          isOpen={showDeclineModal}
+          onClose={() => setShowDeclineModal(false)}
+          onDecline={handleDecline}
+          title="Decline Request"
+          message="Are you sure you want to decline this item?"
+        />
+      ) : (
+        <DeclineModal
+          isOpen={showDeclineModal}
+          onClose={() => setShowDeclineModal(false)}
+          onDecline={handleDeclineExtendInvestmentRequest}
+          title="Decline Request"
+          message="Are you sure you want to decline this item?"
+        />
+      )}
+      {/* </Modal> */}
     </div>
   );
 };

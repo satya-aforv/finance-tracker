@@ -40,6 +40,25 @@ export const investmentsService = {
     return api.get("/investments", { params });
   },
 
+  async updatePrRequestStatus(
+    id: string,
+    requestId: string,
+    data: unknown
+  ): Promise<ApiResponse<Investment[]>> {
+    return api.post(`/investments/${id}/updateRequest/${requestId}`, data);
+  },
+
+  async updateExtendInvestmentRequest(
+    id: string,
+    requestId: string,
+    data: unknown
+  ): Promise<ApiResponse<Investment[]>> {
+    return api.post(
+      `/investments/${id}/updateExtendInvestmentRequest/${requestId}`,
+      data
+    );
+  },
+
   async add_principal_request(
     id: string,
     data: unknown

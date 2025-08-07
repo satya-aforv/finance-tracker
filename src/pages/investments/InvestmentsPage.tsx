@@ -551,7 +551,7 @@ const InvestmentsPage: React.FC = () => {
                                   >
                                     <Edit className="h-4 w-4" />
                                   </button>
-                                  <button
+                                  {/* <button
                                     onClick={() =>
                                       handleViewDetails(investment)
                                     }
@@ -559,7 +559,7 @@ const InvestmentsPage: React.FC = () => {
                                     title="View Schedule"
                                   >
                                     <Calendar className="h-4 w-4" />
-                                  </button>
+                                  </button> */}
                                   <button
                                     onClick={() =>
                                       handleViewDetails(investment)
@@ -569,7 +569,7 @@ const InvestmentsPage: React.FC = () => {
                                   >
                                     <FileText className="h-4 w-4" />
                                   </button>
-                                  <button
+                                  {/* <button
                                     onClick={() =>
                                       handleViewDetails(investment)
                                     }
@@ -577,7 +577,7 @@ const InvestmentsPage: React.FC = () => {
                                     title="View Timeline"
                                   >
                                     <Clock className="h-4 w-4" />
-                                  </button>
+                                  </button> */}
                                 </>
                               )}
                             </div>
