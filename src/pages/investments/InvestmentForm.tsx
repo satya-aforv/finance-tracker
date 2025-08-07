@@ -47,22 +47,20 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({
   onSubmit,
   onCancel,
 }) => {
-  const [investmentData, setInvestmentData] = useState<Investment | null>(
-    investment ? investment : null
-  );
-  const [selectedInvestor, setSelectedInvestor] = useState<Investor | null>(
-    null
-  );
+  const [selectedPlanOption, setSelectedPlanOption] = useState("existing");
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [calculationResult, setCalculationResult] = useState(null);
+  const [calculating, setCalculating] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [investmentData, setInvestmentData] = useState<Investment | null>(null);
   const [editForm, setEditForm] = useState(false);
   const [investors, setInvestors] = useState<Investor[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
-  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
-  const [calculationResult, setCalculationResult] =
-    useState<CalculationResult | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [calculating, setCalculating] = useState(false);
-  const [selectedPlanOption, setSelectedPlanOption] = useState("existing");
-  const [submitting, setSubmitting] = useState(false);
+  const [selectedInvestor, setSelectedInvestor] = useState<
+    Investor | null | unknown
+  >(null);
+  const [plan, setPlan] = useState<Plan | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const {
     register,
@@ -73,15 +71,14 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({
     formState: { errors },
   } = useForm({
     defaultValues: {
+      investor: "",
       investmentDate: new Date().toISOString().split("T")[0],
       notes: "",
       principalAmount: "",
       plan: "",
       // New plan fields with complete payment structure
       newPlan: {
-        name: selectedInvestor
-          ? `${selectedInvestor.name.split(" ")[0]} Custom Plan`
-          : "",
+        name: ``,
         description: "",
         interestRate: 2.5,
         interestType: "flat",
@@ -116,11 +113,18 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({
   const watchPlan = watch("plan");
   const watchPrincipalAmount = watch("principalAmount");
   const watchNewPlan = watch("newPlan");
+  const watchInvestor = watch("investor");
 
   useEffect(() => {
     // console.log(investment, "investment");
+    setInvestmentData(investment ? investment : null);
     setEditForm(investmentData ? true : false);
-  }, [investmentData]);
+    console.log(watchInvestor, "watchInvestor");
+    if (watchInvestor) {
+      setSelectedInvestor(investors.find((i) => i._id === watchInvestor));
+    }
+    console.log(selectedInvestor, "selectedInvestor");
+  }, [investmentData, watchInvestor]);
 
   useEffect(() => {
     if (investmentData) {
@@ -154,62 +158,6 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({
 
     fetchData();
   }, []);
-
-  useEffect(() => {
-    if (watchPlan) {
-      const plan = plans.find((p) => p._id === watchPlan);
-      setSelectedPlan(plan || null);
-      // Clear calculation when plan changes
-      setCalculationResult(null);
-    } else {
-      setSelectedPlan(null);
-      setCalculationResult(null);
-    }
-  }, [watchPlan, plans]);
-
-  // Auto-calculate when both plan and amount are selected
-  useEffect(() => {
-    if (
-      selectedPlan &&
-      watchPrincipalAmount &&
-      watchPrincipalAmount >= selectedPlan.minInvestment
-    ) {
-      calculateReturns();
-    } else {
-      setCalculationResult(null);
-    }
-  }, [selectedPlan, watchPrincipalAmount, watchPlan]);
-
-  const getPaymentTypeLabel = (paymentType: string) => {
-    return paymentType === "interest"
-      ? "Interest Only"
-      : "Interest + Principal";
-  };
-
-  const validateAmount = (amount: number) => {
-    if (!selectedPlan) return true;
-    if (amount < selectedPlan.minInvestment) {
-      return `Minimum investment is ${formatCurrency(
-        selectedPlan.minInvestment
-      )}`;
-    }
-    if (amount > selectedPlan.maxInvestment) {
-      return `Maximum investment is ${formatCurrency(
-        selectedPlan.maxInvestment
-      )}`;
-    }
-    return true;
-  };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
-  //investor, plans, onSubmit, onCancel
 
   useEffect(() => {
     if (selectedPlanOption === "existing" && watchPlan) {
@@ -336,21 +284,52 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <span className="text-blue-700">Name:</span>
-            <span className="ml-2 font-medium">{investor.name}</span>
+            <span className="ml-2 font-medium">{selectedInvestor?.name}</span>
           </div>
           <div>
             <span className="text-blue-700">ID:</span>
-            <span className="ml-2 font-medium">{investor.investorId}</span>
+            <span className="ml-2 font-medium">
+              {selectedInvestor?.investorId}
+            </span>
           </div>
           <div>
             <span className="text-blue-700">Email:</span>
-            <span className="ml-2 font-medium">{investor.email}</span>
+            <span className="ml-2 font-medium">{selectedInvestor?.email}</span>
           </div>
           <div>
             <span className="text-blue-700">Phone:</span>
-            <span className="ml-2 font-medium">{investor.phone}</span>
+            <span className="ml-2 font-medium">{selectedInvestor?.phone}</span>
           </div>
         </div>
+      </div>
+
+      {/* investor selection */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Investor *
+        </label>
+        <select
+          {...register("investor", {
+            required: "Please select an investor",
+          })}
+          // onChange={(e) => {
+          //   // console.log(investors.filter((el) => el?._id == e.target.value));
+          //   setSelectedInvestor(() =>
+          //     investors.filter((el) => el?._id == e.target.value)
+          //   );
+          // }}
+          className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="">Select Investor</option>
+          {investors.map((investor) => (
+            <option key={investor._id} value={investor._id}>
+              {investor.name} ({investor.investorId})
+            </option>
+          ))}
+        </select>
+        {errors.investor && (
+          <p className="mt-1 text-sm text-red-600">{errors.investor.message}</p>
+        )}
       </div>
 
       {/* Plan Selection */}
