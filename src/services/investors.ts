@@ -1,6 +1,6 @@
 // src/services/investors.ts - Complete Enhanced Investors Service
-import api from './api';
-import { Investor, ApiResponse, PaginationParams } from '../types';
+import api from "./api";
+import { Investor, ApiResponse, PaginationParams } from "../types";
 
 export interface CreateInvestorData extends Partial<Investor> {
   // User account creation fields
@@ -50,39 +50,54 @@ export const investorsService = {
   // ================================
 
   // Get all investors with enhanced filtering
-  async getInvestors(params?: PaginationParams & {
-    status?: 'active' | 'inactive' | 'blocked';
-    hasUserAccount?: boolean;
-    kycStatus?: 'pending' | 'verified' | 'rejected';
-    riskProfile?: 'conservative' | 'moderate' | 'aggressive';
-    dateFrom?: string;
-    dateTo?: string;
-    minInvestment?: number;
-    maxInvestment?: number;
-  }): Promise<ApiResponse<Investor[]>> {
-    return api.get('/investors', { params });
+  async getInvestors(
+    params?: PaginationParams & {
+      status?: "active" | "inactive" | "blocked";
+      hasUserAccount?: boolean;
+      kycStatus?: "pending" | "verified" | "rejected";
+      riskProfile?: "conservative" | "moderate" | "aggressive";
+      dateFrom?: string;
+      dateTo?: string;
+      minInvestment?: number;
+      maxInvestment?: number;
+    }
+  ): Promise<ApiResponse<Investor[]>> {
+    return api.get("/investors", { params });
   },
 
   // Get single investor with detailed information
-  async getInvestor(id: string): Promise<ApiResponse<Investor & {
-    investments: any[];
-    paymentSummary: {
-      totalAmount: number;
-      totalInterest: number;
-      totalPrincipal: number;
-      count: number;
-    };
-  }>> {
+  async getInvestor(id: string): Promise<
+    ApiResponse<
+      Investor & {
+        investments: any[];
+        paymentSummary: {
+          totalAmount: number;
+          totalInterest: number;
+          totalPrincipal: number;
+          count: number;
+        };
+      }
+    >
+  > {
     return api.get(`/investors/${id}`);
   },
 
+  async getInvestorByUserId(id: string): Promise<ApiResponse<Investor>> {
+    return api.get(`/investors/${id}/user`);
+  },
+
   // Create investor with optional user account
-  async createInvestor(data: CreateInvestorData): Promise<UserAccountCreationResult> {
-    return api.post('/investors', data);
+  async createInvestor(
+    data: CreateInvestorData
+  ): Promise<UserAccountCreationResult> {
+    return api.post("/investors", data);
   },
 
   // Update investor
-  async updateInvestor(id: string, data: Partial<Investor>): Promise<ApiResponse<Investor>> {
+  async updateInvestor(
+    id: string,
+    data: Partial<Investor>
+  ): Promise<ApiResponse<Investor>> {
     return api.put(`/investors/${id}`, data);
   },
 
@@ -97,14 +112,17 @@ export const investorsService = {
 
   // Create user account for existing investor
   async createUserAccount(
-    investorId: string, 
+    investorId: string,
     credentials: {
       password: string;
       sendCredentials?: boolean;
       temporaryPassword?: boolean;
     }
   ): Promise<ApiResponse<UserAccountManagement>> {
-    return api.post(`/investors/${investorId}/create-user-account`, credentials);
+    return api.post(
+      `/investors/${investorId}/create-user-account`,
+      credentials
+    );
   },
 
   // Reset password for investor's user account
@@ -119,13 +137,15 @@ export const investorsService = {
   },
 
   // Check if investor has user account
-  async checkUserAccount(investorId: string): Promise<ApiResponse<{
-    hasUserAccount: boolean;
-    userId?: string;
-    userEmail?: string;
-    userStatus?: string;
-    lastLogin?: string;
-  }>> {
+  async checkUserAccount(investorId: string): Promise<
+    ApiResponse<{
+      hasUserAccount: boolean;
+      userId?: string;
+      userEmail?: string;
+      userStatus?: string;
+      lastLogin?: string;
+    }>
+  > {
     const investor = await this.getInvestor(investorId);
     return {
       success: true,
@@ -133,8 +153,8 @@ export const investorsService = {
         hasUserAccount: !!investor.data.userId,
         userId: investor.data.userId,
         userEmail: investor.data.email,
-        userStatus: investor.data.status
-      }
+        userStatus: investor.data.status,
+      },
     };
   },
 
@@ -146,29 +166,37 @@ export const investorsService = {
       sendCredentials?: boolean;
       passwordLength?: number;
     } = {}
-  ): Promise<ApiResponse<{
-    successful: Array<{ investorId: string; userId: string; password?: string }>;
-    failed: Array<{ investorId: string; error: string }>;
-    summary: {
-      total: number;
-      successful: number;
-      failed: number;
-      emailsSent: number;
-    };
-  }>> {
-    return api.post('/investors/bulk/create-user-accounts', {
+  ): Promise<
+    ApiResponse<{
+      successful: Array<{
+        investorId: string;
+        userId: string;
+        password?: string;
+      }>;
+      failed: Array<{ investorId: string; error: string }>;
+      summary: {
+        total: number;
+        successful: number;
+        failed: number;
+        emailsSent: number;
+      };
+    }>
+  > {
+    return api.post("/investors/bulk/create-user-accounts", {
       investorIds,
-      options
+      options,
     });
   },
 
   // Get investors without user accounts
-  async getInvestorsWithoutUserAccounts(params?: PaginationParams): Promise<ApiResponse<Investor[]>> {
-    return api.get('/investors', { 
-      params: { 
+  async getInvestorsWithoutUserAccounts(
+    params?: PaginationParams
+  ): Promise<ApiResponse<Investor[]>> {
+    return api.get("/investors", {
+      params: {
         ...params,
-        hasUserAccount: false 
-      } 
+        hasUserAccount: false,
+      },
     });
   },
 
@@ -178,41 +206,49 @@ export const investorsService = {
 
   // Upload documents for investor
   async uploadDocuments(
-    id: string, 
+    id: string,
     files: File[],
     metadata?: {
-      category?: 'agreement' | 'kyc' | 'legal' | 'other';
+      category?: "agreement" | "kyc" | "legal" | "other";
       description?: string;
     }
-  ): Promise<ApiResponse<{
-    uploaded: number;
-    documents: any[];
-  }>> {
+  ): Promise<
+    ApiResponse<{
+      uploaded: number;
+      documents: any[];
+    }>
+  > {
     const formData = new FormData();
-    files.forEach(file => formData.append('documents', file));
-    
+    files.forEach((file) => formData.append("documents", file));
+
     if (metadata?.category) {
-      formData.append('category', metadata.category);
+      formData.append("category", metadata.category);
     }
     if (metadata?.description) {
-      formData.append('description', metadata.description);
+      formData.append("description", metadata.description);
     }
 
     return api.post(`/investors/${id}/documents`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+      headers: { "Content-Type": "multipart/form-data" },
     });
   },
 
   // Get investor documents
-  async getInvestorDocuments(id: string, params?: {
-    category?: string;
-    includeInactive?: boolean;
-  }): Promise<ApiResponse<any[]>> {
+  async getInvestorDocuments(
+    id: string,
+    params?: {
+      category?: string;
+      includeInactive?: boolean;
+    }
+  ): Promise<ApiResponse<any[]>> {
     return api.get(`/investors/${id}/documents`, { params });
   },
 
   // Delete investor document
-  async deleteInvestorDocument(id: string, documentId: string): Promise<ApiResponse<void>> {
+  async deleteInvestorDocument(
+    id: string,
+    documentId: string
+  ): Promise<ApiResponse<void>> {
     return api.delete(`/investors/${id}/documents/${documentId}`);
   },
 
@@ -221,54 +257,62 @@ export const investorsService = {
   // ================================
 
   // Get investor statistics
-  async getStats(): Promise<ApiResponse<{
-    totalInvestors: number;
-    activeInvestors: number;
-    inactiveInvestors: number;
-    newThisMonth: number;
-    totalInvestment: number;
-    averageInvestment: number;
-    withUserAccounts: number;
-    activeUserAccounts: number;
-    userAccountPercentage: number;
-  }>> {
-    return api.get('/investors/stats/overview');
+  async getStats(): Promise<
+    ApiResponse<{
+      totalInvestors: number;
+      activeInvestors: number;
+      inactiveInvestors: number;
+      newThisMonth: number;
+      totalInvestment: number;
+      averageInvestment: number;
+      withUserAccounts: number;
+      activeUserAccounts: number;
+      userAccountPercentage: number;
+    }>
+  > {
+    return api.get("/investors/stats/overview");
   },
 
   // Get investor performance metrics
-  async getInvestorPerformance(id: string): Promise<ApiResponse<{
-    totalInvested: number;
-    totalReturns: number;
-    roi: number;
-    averageInvestmentSize: number;
-    investmentFrequency: number;
-    riskScore: number;
-    performance: 'above_average' | 'average' | 'below_average';
-    trends: Array<{
-      month: string;
-      invested: number;
-      returns: number;
-    }>;
-  }>> {
+  async getInvestorPerformance(id: string): Promise<
+    ApiResponse<{
+      totalInvested: number;
+      totalReturns: number;
+      roi: number;
+      averageInvestmentSize: number;
+      investmentFrequency: number;
+      riskScore: number;
+      performance: "above_average" | "average" | "below_average";
+      trends: Array<{
+        month: string;
+        invested: number;
+        returns: number;
+      }>;
+    }>
+  > {
     return api.get(`/investors/${id}/performance`);
   },
 
   // Get portfolio summary for investor
-  async getPortfolioSummary(investorId: string): Promise<ApiResponse<InvestorSummary>> {
+  async getPortfolioSummary(
+    investorId: string
+  ): Promise<ApiResponse<InvestorSummary>> {
     return api.get(`/investors/${investorId}/portfolio-summary`);
   },
 
   // Get investor investment summary with utility methods
-  async getInvestmentSummary(id: string): Promise<ApiResponse<{
-    totalInvestments: number;
-    activeInvestments: number;
-    completedInvestments: number;
-    totalInvested: number;
-    totalReturns: number;
-    totalExpectedReturns: number;
-    avgInvestmentSize: number;
-    roi: number;
-  }>> {
+  async getInvestmentSummary(id: string): Promise<
+    ApiResponse<{
+      totalInvestments: number;
+      activeInvestments: number;
+      completedInvestments: number;
+      totalInvested: number;
+      totalReturns: number;
+      totalExpectedReturns: number;
+      avgInvestmentSize: number;
+      roi: number;
+    }>
+  > {
     return api.get(`/investors/${id}/investment-summary`);
   },
 
@@ -279,24 +323,35 @@ export const investorsService = {
   },
 
   // Get overdue payments for investor
-  async getOverduePayments(id: string): Promise<ApiResponse<Array<{
-    investmentId: string;
-    month: number;
-    dueDate: string;
-    amount: number;
-    daysPastDue: number;
-  }>>> {
+  async getOverduePayments(id: string): Promise<
+    ApiResponse<
+      Array<{
+        investmentId: string;
+        month: number;
+        dueDate: string;
+        amount: number;
+        daysPastDue: number;
+      }>
+    >
+  > {
     return api.get(`/investors/${id}/overdue-payments`);
   },
 
   // Get upcoming payments for investor
-  async getUpcomingPayments(id: string, days?: number): Promise<ApiResponse<Array<{
-    investmentId: string;
-    month: number;
-    dueDate: string;
-    amount: number;
-    daysUntilDue: number;
-  }>>> {
+  async getUpcomingPayments(
+    id: string,
+    days?: number
+  ): Promise<
+    ApiResponse<
+      Array<{
+        investmentId: string;
+        month: number;
+        dueDate: string;
+        amount: number;
+        daysUntilDue: number;
+      }>
+    >
+  > {
     return api.get(`/investors/${id}/upcoming-payments`, { params: { days } });
   },
 
@@ -308,7 +363,7 @@ export const investorsService = {
   async updateKYCStatus(
     investorId: string,
     kycUpdate: {
-      status: 'pending' | 'verified' | 'rejected';
+      status: "pending" | "verified" | "rejected";
       verifiedBy?: string;
       verificationDate?: string;
       notes?: string;
@@ -319,31 +374,35 @@ export const investorsService = {
   },
 
   // Get compliance status
-  async getComplianceStatus(investorId: string): Promise<ApiResponse<{
-    kycStatus: 'pending' | 'verified' | 'rejected';
-    amlStatus: 'clear' | 'flagged' | 'under_review';
-    taxCompliance: 'compliant' | 'non_compliant' | 'pending';
-    riskRating: 'low' | 'medium' | 'high';
-    lastReviewDate?: string;
-    nextReviewDate?: string;
-    flags: Array<{
-      type: string;
-      description: string;
-      severity: 'low' | 'medium' | 'high';
-      createdAt: string;
-    }>;
-  }>> {
+  async getComplianceStatus(investorId: string): Promise<
+    ApiResponse<{
+      kycStatus: "pending" | "verified" | "rejected";
+      amlStatus: "clear" | "flagged" | "under_review";
+      taxCompliance: "compliant" | "non_compliant" | "pending";
+      riskRating: "low" | "medium" | "high";
+      lastReviewDate?: string;
+      nextReviewDate?: string;
+      flags: Array<{
+        type: string;
+        description: string;
+        severity: "low" | "medium" | "high";
+        createdAt: string;
+      }>;
+    }>
+  > {
     return api.get(`/investors/${investorId}/compliance-status`);
   },
 
   // Validate investor data for user account creation
-  async validateForUserAccount(investorData: Partial<Investor>): Promise<ApiResponse<{
-    isValid: boolean;
-    errors: string[];
-    warnings: string[];
-    recommendations: string[];
-  }>> {
-    return api.post('/investors/validate-for-user-account', investorData);
+  async validateForUserAccount(investorData: Partial<Investor>): Promise<
+    ApiResponse<{
+      isValid: boolean;
+      errors: string[];
+      warnings: string[];
+      recommendations: string[];
+    }>
+  > {
+    return api.post("/investors/validate-for-user-account", investorData);
   },
 
   // ================================
@@ -351,18 +410,20 @@ export const investorsService = {
   // ================================
 
   // Get user account activity for investor
-  async getUserAccountActivity(investorId: string): Promise<ApiResponse<{
-    lastLogin?: string;
-    loginCount: number;
-    investmentsViewed: number;
-    paymentsViewed: number;
-    documentsDownloaded: number;
-    recentActivity: Array<{
-      action: string;
-      timestamp: string;
-      details?: any;
-    }>;
-  }>> {
+  async getUserAccountActivity(investorId: string): Promise<
+    ApiResponse<{
+      lastLogin?: string;
+      loginCount: number;
+      investmentsViewed: number;
+      paymentsViewed: number;
+      documentsDownloaded: number;
+      recentActivity: Array<{
+        action: string;
+        timestamp: string;
+        details?: any;
+      }>;
+    }>
+  > {
     return api.get(`/investors/${investorId}/user-activity`);
   },
 
@@ -374,32 +435,37 @@ export const investorsService = {
       customMessage?: string;
     } = {}
   ): Promise<ApiResponse<{ emailSent: boolean }>> {
-    return api.post(`/investors/${investorId}/send-login-instructions`, options);
+    return api.post(
+      `/investors/${investorId}/send-login-instructions`,
+      options
+    );
   },
 
   // Get communication history
-  async getCommunicationHistory(investorId: string): Promise<ApiResponse<{
-    emails: Array<{
-      type: string;
-      subject: string;
-      sentAt: string;
-      status: 'sent' | 'delivered' | 'opened' | 'failed';
-      content?: string;
-    }>;
-    sms: Array<{
-      type: string;
-      message: string;
-      sentAt: string;
-      status: 'sent' | 'delivered' | 'failed';
-    }>;
-    notifications: Array<{
-      type: string;
-      title: string;
-      message: string;
-      sentAt: string;
-      readAt?: string;
-    }>;
-  }>> {
+  async getCommunicationHistory(investorId: string): Promise<
+    ApiResponse<{
+      emails: Array<{
+        type: string;
+        subject: string;
+        sentAt: string;
+        status: "sent" | "delivered" | "opened" | "failed";
+        content?: string;
+      }>;
+      sms: Array<{
+        type: string;
+        message: string;
+        sentAt: string;
+        status: "sent" | "delivered" | "failed";
+      }>;
+      notifications: Array<{
+        type: string;
+        title: string;
+        message: string;
+        sentAt: string;
+        readAt?: string;
+      }>;
+    }>
+  > {
     return api.get(`/investors/${investorId}/communication-history`);
   },
 
@@ -407,20 +473,25 @@ export const investorsService = {
   async sendCommunication(
     investorId: string,
     communication: {
-      type: 'email' | 'sms' | 'notification';
+      type: "email" | "sms" | "notification";
       subject?: string;
       message: string;
       templateId?: string;
       variables?: { [key: string]: any };
-      priority?: 'low' | 'normal' | 'high';
+      priority?: "low" | "normal" | "high";
       scheduledFor?: string;
     }
-  ): Promise<ApiResponse<{ 
-    communicationId: string; 
-    status: string; 
-    scheduledFor?: string; 
-  }>> {
-    return api.post(`/investors/${investorId}/send-communication`, communication);
+  ): Promise<
+    ApiResponse<{
+      communicationId: string;
+      status: string;
+      scheduledFor?: string;
+    }>
+  > {
+    return api.post(
+      `/investors/${investorId}/send-communication`,
+      communication
+    );
   },
 
   // ================================
@@ -428,21 +499,23 @@ export const investorsService = {
   // ================================
 
   // Get investor preferences
-  async getInvestorPreferences(investorId: string): Promise<ApiResponse<{
-    communication: {
-      email: boolean;
-      sms: boolean;
-      notifications: boolean;
-    };
-    language: string;
-    timezone: string;
-    currency: string;
-    reports: {
-      frequency: 'monthly' | 'quarterly' | 'yearly';
-      format: 'pdf' | 'excel';
-      includeDocuments: boolean;
-    };
-  }>> {
+  async getInvestorPreferences(investorId: string): Promise<
+    ApiResponse<{
+      communication: {
+        email: boolean;
+        sms: boolean;
+        notifications: boolean;
+      };
+      language: string;
+      timezone: string;
+      currency: string;
+      reports: {
+        frequency: "monthly" | "quarterly" | "yearly";
+        format: "pdf" | "excel";
+        includeDocuments: boolean;
+      };
+    }>
+  > {
     return api.get(`/investors/${investorId}/preferences`);
   },
 
@@ -459,28 +532,30 @@ export const investorsService = {
   // ================================
 
   // Get relationship summary
-  async getRelationshipSummary(investorId: string): Promise<ApiResponse<{
-    relationshipStartDate: string;
-    totalLifetimeValue: number;
-    averageInvestmentSize: number;
-    investmentFrequency: number;
-    lastInteractionDate: string;
-    satisfactionScore?: number;
-    riskProfile: 'conservative' | 'moderate' | 'aggressive';
-    preferredContactMethod: 'email' | 'phone' | 'sms';
-    assignedRelationshipManager?: {
-      id: string;
-      name: string;
-      email: string;
-    };
-    notes: Array<{
-      id: string;
-      content: string;
-      createdBy: string;
-      createdAt: string;
-      category: 'general' | 'investment' | 'service' | 'complaint';
-    }>;
-  }>> {
+  async getRelationshipSummary(investorId: string): Promise<
+    ApiResponse<{
+      relationshipStartDate: string;
+      totalLifetimeValue: number;
+      averageInvestmentSize: number;
+      investmentFrequency: number;
+      lastInteractionDate: string;
+      satisfactionScore?: number;
+      riskProfile: "conservative" | "moderate" | "aggressive";
+      preferredContactMethod: "email" | "phone" | "sms";
+      assignedRelationshipManager?: {
+        id: string;
+        name: string;
+        email: string;
+      };
+      notes: Array<{
+        id: string;
+        content: string;
+        createdBy: string;
+        createdAt: string;
+        category: "general" | "investment" | "service" | "complaint";
+      }>;
+    }>
+  > {
     return api.get(`/investors/${investorId}/relationship-summary`);
   },
 
@@ -489,8 +564,8 @@ export const investorsService = {
     investorId: string,
     note: {
       content: string;
-      category: 'general' | 'investment' | 'service' | 'complaint';
-      priority?: 'low' | 'normal' | 'high';
+      category: "general" | "investment" | "service" | "complaint";
+      priority?: "low" | "normal" | "high";
       followUpDate?: string;
     }
   ): Promise<ApiResponse<any>> {
@@ -519,25 +594,29 @@ export const investorsService = {
     };
     sort?: {
       field: string;
-      order: 'asc' | 'desc';
+      order: "asc" | "desc";
     };
     page?: number;
     limit?: number;
   }): Promise<ApiResponse<Investor[]>> {
-    return api.post('/investors/search', searchParams);
+    return api.post("/investors/search", searchParams);
   },
 
   // Get top investors by various metrics
   async getTopInvestors(criteria: {
-    metric: 'investment_amount' | 'returns' | 'frequency' | 'roi';
+    metric: "investment_amount" | "returns" | "frequency" | "roi";
     limit?: number;
-    period?: 'month' | 'quarter' | 'year' | 'all';
-  }): Promise<ApiResponse<Array<{
-    investor: Investor;
-    value: number;
-    rank: number;
-  }>>> {
-    return api.get('/investors/top-investors', { params: criteria });
+    period?: "month" | "quarter" | "year" | "all";
+  }): Promise<
+    ApiResponse<
+      Array<{
+        investor: Investor;
+        value: number;
+        rank: number;
+      }>
+    >
+  > {
+    return api.get("/investors/top-investors", { params: criteria });
   },
 
   // ================================
@@ -553,37 +632,44 @@ export const investorsService = {
       preferredContactMethod?: string;
       notes?: string;
     }
-  ): Promise<ApiResponse<{
-    successful: string[];
-    failed: Array<{ investorId: string; error: string }>;
-    summary: {
-      total: number;
-      successful: number;
-      failed: number;
-    };
-  }>> {
-    return api.put('/investors/bulk-update', { investorIds, updates });
+  ): Promise<
+    ApiResponse<{
+      successful: string[];
+      failed: Array<{ investorId: string; error: string }>;
+      summary: {
+        total: number;
+        successful: number;
+        failed: number;
+      };
+    }>
+  > {
+    return api.put("/investors/bulk-update", { investorIds, updates });
   },
 
   // Bulk communication
   async bulkCommunication(
     investorIds: string[],
     communication: {
-      type: 'email' | 'sms' | 'notification';
+      type: "email" | "sms" | "notification";
       subject?: string;
       message: string;
       templateId?: string;
     }
-  ): Promise<ApiResponse<{
-    successful: string[];
-    failed: Array<{ investorId: string; error: string }>;
-    summary: {
-      total: number;
-      successful: number;
-      failed: number;
-    };
-  }>> {
-    return api.post('/investors/bulk-communication', { investorIds, communication });
+  ): Promise<
+    ApiResponse<{
+      successful: string[];
+      failed: Array<{ investorId: string; error: string }>;
+      summary: {
+        total: number;
+        successful: number;
+        failed: number;
+      };
+    }>
+  > {
+    return api.post("/investors/bulk-communication", {
+      investorIds,
+      communication,
+    });
   },
 
   // ================================
@@ -592,15 +678,15 @@ export const investorsService = {
 
   // Export investors data
   async exportInvestors(options: {
-    format: 'csv' | 'excel' | 'pdf';
+    format: "csv" | "excel" | "pdf";
     includeUserAccounts?: boolean;
     includeInvestments?: boolean;
     includeDocuments?: boolean;
     filters?: any;
   }): Promise<Blob> {
-    const response = await api.get('/investors/export', { 
+    const response = await api.get("/investors/export", {
       params: options,
-      responseType: 'blob' 
+      responseType: "blob",
     });
     return response.data;
   },
@@ -614,30 +700,32 @@ export const investorsService = {
       skipValidation?: boolean;
       dryRun?: boolean;
     } = {}
-  ): Promise<ApiResponse<{
-    successful: number;
-    failed: number;
-    errors: Array<{
-      row: number;
-      field?: string;
-      error: string;
-    }>;
-    summary: {
-      totalRows: number;
-      processedRows: number;
-      userAccountsCreated: number;
-      emailsSent: number;
-    };
-  }>> {
+  ): Promise<
+    ApiResponse<{
+      successful: number;
+      failed: number;
+      errors: Array<{
+        row: number;
+        field?: string;
+        error: string;
+      }>;
+      summary: {
+        totalRows: number;
+        processedRows: number;
+        userAccountsCreated: number;
+        emailsSent: number;
+      };
+    }>
+  > {
     const formData = new FormData();
-    formData.append('file', file);
-    
-    Object.keys(options).forEach(key => {
+    formData.append("file", file);
+
+    Object.keys(options).forEach((key) => {
       formData.append(key, String(options[key as keyof typeof options]));
     });
 
-    return api.post('/investors/import', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+    return api.post("/investors/import", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
     });
   },
 
@@ -646,13 +734,15 @@ export const investorsService = {
   // ================================
 
   // Test email configuration
-  async testEmail(email: string): Promise<ApiResponse<{
-    success: boolean;
-    message: string;
-    messageId?: string;
-    sentTo: string;
-  }>> {
-    return api.post('/investors/test-email', { email });
+  async testEmail(email: string): Promise<
+    ApiResponse<{
+      success: boolean;
+      message: string;
+      messageId?: string;
+      sentTo: string;
+    }>
+  > {
+    return api.post("/investors/test-email", { email });
   },
 
   // ================================
@@ -662,7 +752,9 @@ export const investorsService = {
   // Calculate total ROI for investor (client-side utility)
   calculateTotalROI(investor: Investor): number {
     if (investor.totalInvestment === 0) return 0;
-    return Number(((investor.totalReturns / investor.totalInvestment) * 100).toFixed(2));
+    return Number(
+      ((investor.totalReturns / investor.totalInvestment) * 100).toFixed(2)
+    );
   },
 
   // Check if investor needs follow-up (client-side utility)
@@ -674,38 +766,40 @@ export const investorsService = {
   // Format investor full address (client-side utility)
   getFullAddress(investor: Investor): string {
     const addr = investor.address;
-    if (!addr.street) return '';
-    
+    if (!addr.street) return "";
+
     return [addr.street, addr.city, addr.state, addr.pincode, addr.country]
       .filter(Boolean)
-      .join(', ');
+      .join(", ");
   },
 
   // Check if KYC is complete (client-side utility)
   isKYCComplete(investor: Investor): boolean {
-    return investor.kyc && 
-           investor.kyc.panNumber && 
-           investor.kyc.aadharNumber && 
-           investor.kyc.bankDetails.accountNumber &&
-           investor.kyc.verificationStatus === 'verified';
+    return (
+      investor.kyc &&
+      investor.kyc.panNumber &&
+      investor.kyc.aadharNumber &&
+      investor.kyc.bankDetails.accountNumber &&
+      investor.kyc.verificationStatus === "verified"
+    );
   },
 
   // Get investor risk level color (client-side utility)
   getRiskLevelColor(riskProfile: string): string {
     const colors = {
-      conservative: 'green',
-      moderate: 'yellow',
-      aggressive: 'red'
+      conservative: "green",
+      moderate: "yellow",
+      aggressive: "red",
     };
-    return colors[riskProfile as keyof typeof colors] || 'gray';
+    return colors[riskProfile as keyof typeof colors] || "gray";
   },
 
   // Format currency amount (client-side utility)
-  formatCurrency(amount: number, currency: string = 'INR'): string {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
+  formatCurrency(amount: number, currency: string = "INR"): string {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
       currency,
       minimumFractionDigits: 0,
     }).format(amount);
-  }
+  },
 };

@@ -183,6 +183,7 @@ export interface Plan {
   isActive: boolean;
   features?: string[];
   riskLevel: "low" | "medium" | "high";
+  planType: "admin" | "custom";
   totalInvestors: number;
   totalInvestment: number;
   createdBy: string;

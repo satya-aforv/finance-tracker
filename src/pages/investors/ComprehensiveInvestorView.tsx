@@ -1343,6 +1343,7 @@ const InvestmentCreationForm = ({ investor, plans, onSubmit, onCancel }) => {
         // Create the plan first
         const planResponse = await plansService.createPlan({
           ...data.customPlan,
+          planType: "custom",
           isActive: true,
         });
         planToUse = planResponse.data._id;

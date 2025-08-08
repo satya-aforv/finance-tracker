@@ -268,6 +268,7 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({
         };
         const planResponse = await plansService.createPlan({
           ...data.newPlan,
+          planType: "custom",
           isActive: true,
         });
         planToUse = planResponse.data._id;

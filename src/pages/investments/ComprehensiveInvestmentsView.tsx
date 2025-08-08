@@ -224,9 +224,9 @@ const ComprehensiveInvestmentsView = ({
         setInvestments(investmentsResponse.data || []);
         setPlans(plansResponse.data || []);
       } catch (error) {
-        console.error("Error fetching investor data:", error);
+        console.error("Error fetching investor data:", error?.message || error);
         if (canManage) {
-          toast.error("Failed to load investor data");
+          toast.error(error?.message || "Failed to load investor data");
         }
       } finally {
         setLoading(false);
@@ -248,7 +248,9 @@ const ComprehensiveInvestmentsView = ({
         setInvestment(response.data || []);
       } catch (error: any) {
         toast.error(
-          error.response?.data?.message || "Failed to fetch investments"
+          error.response?.data?.message ||
+            error?.message ||
+            "Failed to fetch investments"
         );
       } finally {
         setLoading(false);
@@ -279,14 +281,20 @@ const ComprehensiveInvestmentsView = ({
         payload
       );
       if (!response) {
-        toast.error(response?.message || "Failed to confirm investment!");
+        toast.error(
+          response?.message ||
+            response?.message ||
+            "Failed to confirm investment!"
+        );
         return;
       }
       await fetchInvestments();
       toast.success(`Investment ${status} successfully!`);
     } catch (error) {
       toast.error(
-        error?.response?.data?.message || "Failed to confirm investment!"
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to confirm investment!"
       );
       return;
     }
@@ -311,7 +319,9 @@ const ComprehensiveInvestmentsView = ({
       toast.success(`Investment ${status} successfully!`);
     } catch (error) {
       toast.error(
-        error?.response?.data?.message || "Failed to confirm investment!"
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to confirm investment!"
       );
       return;
     }
@@ -333,7 +343,9 @@ const ComprehensiveInvestmentsView = ({
         extendedInvestment
       );
       if (!response) {
-        toast.error(response?.message || "Failed to raise a request!");
+        toast.error(
+          response?.message || response?.message || "Failed to raise a request!"
+        );
         return;
       }
       toast.success(response?.message || "Request raised successfully!");
@@ -399,7 +411,9 @@ const ComprehensiveInvestmentsView = ({
     } catch (error) {
       console.error("Error creating investment:", error);
       toast.error(
-        error.response?.data?.message || "Failed to create investment"
+        error.response?.data?.message ||
+          error?.message ||
+          "Failed to create investment"
       );
     }
   };
@@ -1843,12 +1857,11 @@ const ComprehensiveInvestmentsView = ({
                             SN
                           </th>
                           <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Requested Amount
-                          </th>
-                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Payout TImeline
                           </th>
-
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Requested Amount
+                          </th>
                           <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Status
                           </th>
@@ -1879,8 +1892,11 @@ const ComprehensiveInvestmentsView = ({
                           <div className="flex items-center space-x-2">
                             <span title="Add Remarks">
                               {payment?.status === "Approved" ? (
-                                <Check className="h-5 w-5 text-green-400 cursor-not-allowed" />
-                              ) : (
+                                <span title="Approved">
+                                  <Check className="h-5 w-5 text-green-400 cursor-not-allowed" />
+                                </span>
+                              ) : null}
+                              {/* (
                                 <Check
                                   onClick={() => {
                                     setPrincipalRequest(payment);
@@ -1889,12 +1905,15 @@ const ComprehensiveInvestmentsView = ({
                                   }}
                                   className="h-5 w-5 text-green-600 cursor-pointer"
                                 />
-                              )}
+                              ) */}
                             </span>
                             <span title="Add Remarks">
                               {payment?.status === "Declined" ? (
-                                <X className="h-5 w-5 text-red-400 cursor-not-allowed" />
-                              ) : (
+                                <span title="Declined">
+                                  <X className="h-5 w-5 text-red-400 cursor-not-allowed" />
+                                </span>
+                              ) : null}
+                              {/* (
                                 <X
                                   onClick={() => {
                                     setPrincipalRequest(payment);
@@ -1903,7 +1922,7 @@ const ComprehensiveInvestmentsView = ({
                                   }}
                                   className="h-5 w-5 text-red-600 cursor-pointer"
                                 />
-                              )}
+                              ) */}
                             </span>
                           </div>
                         </td>
@@ -2172,10 +2191,10 @@ const ComprehensiveInvestmentsView = ({
                                 {index + 1}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                {reqInvst.extantionRequestTenure}
+                                {reqInvst.investmentTenure}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                {reqInvst.investmentTenure}
+                                {reqInvst.extantionRequestTenure}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 {getStatusBadge(reqInvst.status)}
@@ -2264,7 +2283,8 @@ const ComprehensiveInvestmentsView = ({
                             <span title="Add Remarks">
                               {payment?.status === "Approved" ? (
                                 <Check className="h-5 w-5 text-green-400 cursor-not-allowed" />
-                              ) : (
+                              ) : null}
+                              {/* (
                                 <Check
                                   onClick={() => {
                                     setExtInvestmentRequest(payment);
@@ -2273,12 +2293,13 @@ const ComprehensiveInvestmentsView = ({
                                   }}
                                   className="h-5 w-5 text-green-600 cursor-pointer"
                                 />
-                              )}
+                              ) */}
                             </span>
                             <span title="Add Remarks">
                               {payment?.status === "Declined" ? (
                                 <X className="h-5 w-5 text-red-400 cursor-not-allowed" />
-                              ) : (
+                              ) : null}
+                              {/* (
                                 <X
                                   onClick={() => {
                                     setExtInvestmentRequest(payment);
@@ -2287,7 +2308,7 @@ const ComprehensiveInvestmentsView = ({
                                   }}
                                   className="h-5 w-5 text-red-600 cursor-pointer"
                                 />
-                              )}
+                              ) */}
                             </span>
                           </div>
                         </td>

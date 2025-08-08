@@ -194,7 +194,11 @@ const CreateRemarksFormPR = ({
       onSubmit();
     } catch (error) {
       console.error("Error adding remarks:", error);
-      toast.error(error.response?.data?.message || "Failed to add remarks");
+      toast.error(
+        error.response?.data?.message ||
+          error?.message ||
+          "Failed to add remarks"
+      );
     } finally {
       setSubmitting(false);
     }

@@ -76,7 +76,7 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
       setDocuments(response.data.documents || []);
       setDocumentStats(response.data.documentsByCategory || {});
     } catch (error: any) {
-      toast.error("Failed to fetch documents");
+      toast.error(error?.message || "Failed to fetch documents");
     } finally {
       setLoading(false);
     }
@@ -117,7 +117,9 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
       fetchDocuments();
     } catch (error: any) {
       toast.error(
-        error.response?.data?.message || "Failed to upload documents"
+        error.response?.data?.message ||
+          error?.message ||
+          "Failed to upload documents"
       );
     } finally {
       setUploading(false);
@@ -132,7 +134,7 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
       toast.success("Document deleted successfully");
       fetchDocuments();
     } catch (error: any) {
-      toast.error("Failed to delete document");
+      toast.error(error?.message || "Failed to delete document");
     }
   };
 

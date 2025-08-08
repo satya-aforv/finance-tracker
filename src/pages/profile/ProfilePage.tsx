@@ -28,8 +28,11 @@ import {
   Calendar,
   Mail,
   Phone,
+  User2Icon,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import { investorsService } from "../../services/investors";
+import toast from "react-hot-toast";
 
 interface Address {
   country: string;
@@ -58,6 +61,15 @@ interface UserData {
   };
   bio?: string;
   title?: string;
+  referral?: {
+    altMobile: string;
+    email: string;
+    mobile: string;
+    name: string;
+    otherTypeDetail: string;
+    referralFeeExpectation: string;
+    type: string;
+  };
 }
 
 interface ValidationErrors {
@@ -106,7 +118,7 @@ export default function UserProfile({
   const { user } = useAuth();
 
   // Sample user data based on your payload
-  const [userData, setUserData] = useState<UserData | null>(
+  const [userData, setUserData] = useState<UserData | null | unknown>(
     initialUserData || {
       ...user,
       bio: "Experienced investor with focus on technology startups and sustainable businesses. Passionate about supporting innovative entrepreneurs.",
@@ -114,7 +126,7 @@ export default function UserProfile({
     }
   );
 
-  const [editData, setEditData] = useState<UserData | null>(userData);
+  const [editData, setEditData] = useState<UserData | null | unknown>(userData);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -163,6 +175,23 @@ export default function UserProfile({
 
   useEffect(() => {
     console.log(user, "user");
+    const fetchInvestor = async () => {
+      try {
+        const response = await investorsService.getInvestorByUserId(user?._id);
+        setUserData((prev) => {
+          return {
+            ...prev,
+            ...response.data[0],
+          };
+        });
+      } catch (error) {
+        toast.error("Failed to fetch investor");
+      }
+    };
+
+    if (user?._id) {
+      fetchInvestor();
+    }
   }, [user]);
 
   const handleEdit = () => {
@@ -176,13 +205,6 @@ export default function UserProfile({
     if (!editData || !validateForm()) return;
     setUserData({ ...editData, updatedAt: new Date().toISOString() });
     setIsEditing(false);
-    setErrors({});
-  };
-
-  const handleCancel = () => {
-    if (!userData) return;
-    setIsEditing(false);
-    setEditData({ ...userData });
     setErrors({});
   };
 
@@ -238,6 +260,7 @@ export default function UserProfile({
 
   const sidebarItems = [
     { id: "personal-info", label: "Personal Info", icon: User },
+    { id: "referal", label: "Referal", icon: User2Icon },
     { id: "security", label: "Security", icon: Shield },
     { id: "notifications", label: "Notifications", icon: Bell },
     { id: "billing", label: "Billing", icon: CreditCard },
@@ -275,7 +298,7 @@ export default function UserProfile({
   }
 
   // No user data state
-  if (!userData) {
+  if (!userData && !user?._id) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
@@ -441,739 +464,1037 @@ export default function UserProfile({
           >
             <Card>
               <CardContent className="p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-semibold text-gray-900">
-                    Personal Information
-                  </h2>
-                  <AnimatePresence mode="wait">
-                    {!isEditing ? (
-                      <motion.div
-                        key="edit-button"
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <Button
-                          onClick={handleEdit}
-                          variant="outline"
-                          size="sm"
-                        >
-                          <Edit3 className="w-4 h-4 mr-2" />
-                          Edit
-                        </Button>
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        key="action-buttons"
-                        className="flex gap-2"
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <Button onClick={handleSave} size="sm">
-                          <Check className="w-4 h-4 mr-2" />
-                          Save
-                        </Button>
-                        <Button
-                          onClick={handleCancel}
-                          variant="outline"
-                          size="sm"
-                        >
-                          <X className="w-4 h-4 mr-2" />
-                          Cancel
-                        </Button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                {activeTab == "personal-info" && (
+                  <>
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-2xl font-semibold text-gray-900">
+                        Personal Information
+                      </h2>
+                      {/* <AnimatePresence mode="wait">
+                        {!isEditing ? (
+                          <motion.div
+                            key="edit-button"
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <Button
+                              onClick={handleEdit}
+                              variant="outline"
+                              size="sm"
+                            >
+                              <Edit3 className="w-4 h-4 mr-2" />
+                              Edit
+                            </Button>
+                          </motion.div>
+                        ) : (
+                          <motion.div
+                            key="action-buttons"
+                            className="flex gap-2"
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <Button onClick={handleSave} size="sm">
+                              <Check className="w-4 h-4 mr-2" />
+                              Save
+                            </Button>
+                            <Button
+                              onClick={handleCancel}
+                              variant="outline"
+                              size="sm"
+                            >
+                              <X className="w-4 h-4 mr-2" />
+                              Cancel
+                            </Button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence> */}
+                    </div>
 
-                <motion.div className="space-y-8" layout>
-                  {/* Basic Information */}
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                      <User className="w-5 h-5 mr-2" />
-                      Basic Information
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Full Name */}
+                    <motion.div className="space-y-8" layout>
+                      {/* Basic Information */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Full Name
-                        </label>
+                        <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                          <User className="w-5 h-5 mr-2" />
+                          Basic Information
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {/* Full Name */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Full Name
+                            </label>
+                            <AnimatePresence mode="wait">
+                              {isEditing ? (
+                                <motion.div
+                                  key="name-input"
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  transition={{ duration: 0.2 }}
+                                >
+                                  <Input
+                                    value={editData?.name || ""}
+                                    onChange={(e) =>
+                                      handleInputChange("name", e.target.value)
+                                    }
+                                    className={
+                                      errors.name ? "border-red-500" : ""
+                                    }
+                                    placeholder="Enter full name"
+                                  />
+                                  {errors.name && (
+                                    <motion.p
+                                      initial={{ opacity: 0, y: -5 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      className="text-red-500 text-sm mt-1"
+                                    >
+                                      {errors.name}
+                                    </motion.p>
+                                  )}
+                                </motion.div>
+                              ) : (
+                                <motion.p
+                                  key="name-display"
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="text-gray-900 py-2"
+                                >
+                                  {userData.name}
+                                </motion.p>
+                              )}
+                            </AnimatePresence>
+                          </div>
+
+                          {/* Role */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Role
+                            </label>
+                            <AnimatePresence mode="wait">
+                              {isEditing ? (
+                                <motion.div
+                                  key="role-input"
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  transition={{ duration: 0.2 }}
+                                >
+                                  <Select
+                                    value={editData.role}
+                                    onValueChange={(value) =>
+                                      handleInputChange("role", value)
+                                    }
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select role" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {roles.map((role) => (
+                                        <SelectItem key={role} value={role}>
+                                          {role.charAt(0).toUpperCase() +
+                                            role.slice(1)}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </motion.div>
+                              ) : (
+                                <motion.div
+                                  key="role-display"
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="py-2"
+                                >
+                                  <Badge
+                                    className={getRoleColor(userData.role)}
+                                  >
+                                    {userData.role.charAt(0).toUpperCase() +
+                                      userData.role.slice(1)}
+                                  </Badge>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+
+                          {/* Email */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              <Mail className="w-4 h-4 inline mr-1" />
+                              Email
+                            </label>
+                            <AnimatePresence mode="wait">
+                              {isEditing ? (
+                                <motion.div
+                                  key="email-input"
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  transition={{ duration: 0.2 }}
+                                >
+                                  <Input
+                                    type="email"
+                                    value={editData?.email || ""}
+                                    onChange={(e) =>
+                                      handleInputChange("email", e.target.value)
+                                    }
+                                    className={
+                                      errors.email ? "border-red-500" : ""
+                                    }
+                                    placeholder="Enter email address"
+                                  />
+                                  {errors.email && (
+                                    <motion.p
+                                      initial={{ opacity: 0, y: -5 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      className="text-red-500 text-sm mt-1"
+                                    >
+                                      {errors.email}
+                                    </motion.p>
+                                  )}
+                                </motion.div>
+                              ) : (
+                                <motion.div
+                                  key="email-display"
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="text-gray-900 py-2 flex items-center"
+                                >
+                                  {userData.email}
+                                  {userData.emailVerified && (
+                                    <Check className="w-4 h-4 ml-2 text-green-500" />
+                                  )}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+
+                          {/* Phone */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              <Phone className="w-4 h-4 inline mr-1" />
+                              Phone
+                            </label>
+                            <AnimatePresence mode="wait">
+                              {isEditing ? (
+                                <motion.div
+                                  key="phone-input"
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  transition={{ duration: 0.2 }}
+                                >
+                                  <Input
+                                    type="tel"
+                                    value={editData?.phone || ""}
+                                    onChange={(e) =>
+                                      handleInputChange("phone", e.target.value)
+                                    }
+                                    className={
+                                      errors.phone ? "border-red-500" : ""
+                                    }
+                                    placeholder="Enter phone number"
+                                  />
+                                  {errors.phone && (
+                                    <motion.p
+                                      initial={{ opacity: 0, y: -5 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      className="text-red-500 text-sm mt-1"
+                                    >
+                                      {errors.phone}
+                                    </motion.p>
+                                  )}
+                                </motion.div>
+                              ) : (
+                                <motion.p
+                                  key="phone-display"
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="text-gray-900 py-2"
+                                >
+                                  {userData.phone}
+                                </motion.p>
+                              )}
+                            </AnimatePresence>
+                          </div>
+
+                          {/* Title */}
+                          <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Job Title
+                            </label>
+                            <AnimatePresence mode="wait">
+                              {isEditing ? (
+                                <motion.div
+                                  key="title-input"
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  transition={{ duration: 0.2 }}
+                                >
+                                  <Input
+                                    value={editData?.title || ""}
+                                    onChange={(e) =>
+                                      handleInputChange("title", e.target.value)
+                                    }
+                                    placeholder="Enter job title"
+                                  />
+                                </motion.div>
+                              ) : (
+                                <motion.p
+                                  key="title-display"
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="text-gray-900 py-2"
+                                >
+                                  {userData.title || "Not specified"}
+                                </motion.p>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Address Information */}
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                          <MapPin className="w-5 h-5 mr-2" />
+                          Address Information
+                        </h3>
+
+                        {/* Present Address */}
+                        <div className="mb-6">
+                          <h4 className="text-md font-medium text-gray-800 mb-3">
+                            Present Address
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Country
+                              </label>
+                              <AnimatePresence mode="wait">
+                                {isEditing ? (
+                                  <motion.div
+                                    key="present-country-input"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.2 }}
+                                  >
+                                    <Select
+                                      value={
+                                        editData?.address?.present?.country
+                                      }
+                                      onValueChange={(value) =>
+                                        handleInputChange(
+                                          "address.present.country",
+                                          value
+                                        )
+                                      }
+                                    >
+                                      <SelectTrigger
+                                        className={
+                                          errors.presentCountry
+                                            ? "border-red-500"
+                                            : ""
+                                        }
+                                      >
+                                        <SelectValue placeholder="Select country" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {countries.map((country) => (
+                                          <SelectItem
+                                            key={country}
+                                            value={country}
+                                          >
+                                            {country}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    {errors.presentCountry && (
+                                      <motion.p
+                                        initial={{ opacity: 0, y: -5 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="text-red-500 text-sm mt-1"
+                                      >
+                                        {errors.presentCountry}
+                                      </motion.p>
+                                    )}
+                                  </motion.div>
+                                ) : (
+                                  <motion.p
+                                    key="present-country-display"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="text-gray-900 py-2"
+                                  >
+                                    {userData?.address?.present?.country ||
+                                      "N/A"}
+                                  </motion.p>
+                                )}
+                              </AnimatePresence>
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                State
+                              </label>
+                              <AnimatePresence mode="wait">
+                                {isEditing ? (
+                                  <motion.div
+                                    key="present-state-input"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.2 }}
+                                  >
+                                    <Input
+                                      value={
+                                        editData?.address?.present?.state || ""
+                                      }
+                                      onChange={(e) =>
+                                        handleInputChange(
+                                          "address.present.state",
+                                          e.target.value
+                                        )
+                                      }
+                                      placeholder="Enter state"
+                                    />
+                                  </motion.div>
+                                ) : (
+                                  <motion.p
+                                    key="present-state-display"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="text-gray-900 py-2"
+                                  >
+                                    {userData?.address?.present?.state ||
+                                      "Not specified"}
+                                  </motion.p>
+                                )}
+                              </AnimatePresence>
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                City
+                              </label>
+                              <AnimatePresence mode="wait">
+                                {isEditing ? (
+                                  <motion.div
+                                    key="present-city-input"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.2 }}
+                                  >
+                                    <Input
+                                      value={
+                                        editData?.address?.present?.city || ""
+                                      }
+                                      onChange={(e) =>
+                                        handleInputChange(
+                                          "address.present.city",
+                                          e.target.value
+                                        )
+                                      }
+                                      placeholder="Enter city"
+                                    />
+                                  </motion.div>
+                                ) : (
+                                  <motion.p
+                                    key="present-city-display"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="text-gray-900 py-2"
+                                  >
+                                    {userData?.address?.present?.city ||
+                                      "Not specified"}
+                                  </motion.p>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Permanent Address */}
+                        <div>
+                          <h4 className="text-md font-medium text-gray-800 mb-3">
+                            Permanent Address
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Country
+                              </label>
+                              <AnimatePresence mode="wait">
+                                {isEditing ? (
+                                  <motion.div
+                                    key="permanent-country-input"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.2 }}
+                                  >
+                                    <Select
+                                      value={
+                                        editData?.address?.permanent?.country
+                                      }
+                                      onValueChange={(value) =>
+                                        handleInputChange(
+                                          "address.permanent.country",
+                                          value
+                                        )
+                                      }
+                                    >
+                                      <SelectTrigger
+                                        className={
+                                          errors.permanentCountry
+                                            ? "border-red-500"
+                                            : ""
+                                        }
+                                      >
+                                        <SelectValue placeholder="Select country" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {countries.map((country) => (
+                                          <SelectItem
+                                            key={country}
+                                            value={country}
+                                          >
+                                            {country}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    {errors.permanentCountry && (
+                                      <motion.p
+                                        initial={{ opacity: 0, y: -5 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="text-red-500 text-sm mt-1"
+                                      >
+                                        {errors.permanentCountry}
+                                      </motion.p>
+                                    )}
+                                  </motion.div>
+                                ) : (
+                                  <motion.p
+                                    key="permanent-country-display"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="text-gray-900 py-2"
+                                  >
+                                    {userData?.address?.permanent?.country}
+                                  </motion.p>
+                                )}
+                              </AnimatePresence>
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                State
+                              </label>
+                              <AnimatePresence mode="wait">
+                                {isEditing ? (
+                                  <motion.div
+                                    key="permanent-state-input"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.2 }}
+                                  >
+                                    <Input
+                                      value={
+                                        editData?.address?.permanent?.state ||
+                                        ""
+                                      }
+                                      onChange={(e) =>
+                                        handleInputChange(
+                                          "address.permanent.state",
+                                          e.target.value
+                                        )
+                                      }
+                                      placeholder="Enter state"
+                                    />
+                                  </motion.div>
+                                ) : (
+                                  <motion.p
+                                    key="permanent-state-display"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="text-gray-900 py-2"
+                                  >
+                                    {userData?.address?.permanent?.state ||
+                                      "Not specified"}
+                                  </motion.p>
+                                )}
+                              </AnimatePresence>
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                City
+                              </label>
+                              <AnimatePresence mode="wait">
+                                {isEditing ? (
+                                  <motion.div
+                                    key="permanent-city-input"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.2 }}
+                                  >
+                                    <Input
+                                      value={
+                                        editData?.address?.permanent?.city || ""
+                                      }
+                                      onChange={(e) =>
+                                        handleInputChange(
+                                          "address.permanent.city",
+                                          e.target.value
+                                        )
+                                      }
+                                      placeholder="Enter city"
+                                    />
+                                  </motion.div>
+                                ) : (
+                                  <motion.p
+                                    key="permanent-city-display"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="text-gray-900 py-2"
+                                  >
+                                    {userData?.address?.permanent?.city ||
+                                      "Not specified"}
+                                  </motion.p>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Bio */}
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-4">
+                          About
+                        </h3>
                         <AnimatePresence mode="wait">
                           {isEditing ? (
                             <motion.div
-                              key="name-input"
+                              key="bio-input"
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: -10 }}
                               transition={{ duration: 0.2 }}
                             >
-                              <Input
-                                value={editData?.name || ""}
+                              <Textarea
+                                value={editData?.bio || ""}
                                 onChange={(e) =>
-                                  handleInputChange("name", e.target.value)
+                                  handleInputChange("bio", e.target.value)
                                 }
-                                className={errors.name ? "border-red-500" : ""}
-                                placeholder="Enter full name"
+                                className={`min-h-[100px] ${
+                                  errors.bio ? "border-red-500" : ""
+                                }`}
+                                placeholder="Tell us about yourself"
                               />
-                              {errors.name && (
+                              {errors.bio && (
                                 <motion.p
                                   initial={{ opacity: 0, y: -5 }}
                                   animate={{ opacity: 1, y: 0 }}
                                   className="text-red-500 text-sm mt-1"
                                 >
-                                  {errors.name}
+                                  {errors.bio}
                                 </motion.p>
                               )}
                             </motion.div>
                           ) : (
                             <motion.p
-                              key="name-display"
+                              key="bio-display"
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: -10 }}
                               transition={{ duration: 0.2 }}
-                              className="text-gray-900 py-2"
+                              className="text-gray-900 py-2 leading-relaxed"
                             >
-                              {userData.name}
+                              {userData.bio || "No bio available"}
                             </motion.p>
                           )}
                         </AnimatePresence>
                       </div>
 
-                      {/* Role */}
+                      {/* Account Information */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Role
-                        </label>
-                        <AnimatePresence mode="wait">
-                          {isEditing ? (
-                            <motion.div
-                              key="role-input"
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -10 }}
-                              transition={{ duration: 0.2 }}
-                            >
-                              <Select
-                                value={editData.role}
-                                onValueChange={(value) =>
-                                  handleInputChange("role", value)
+                        <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                          <Shield className="w-5 h-5 mr-2" />
+                          Account Information
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                          <div>
+                            <span className="font-medium text-gray-700">
+                              User ID:
+                            </span>
+                            <p className="text-gray-900 font-mono">
+                              {userData._id}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-700">
+                              Account Status:
+                            </span>
+                            <p className="text-gray-900">
+                              <Badge
+                                variant={
+                                  userData.isActive ? "default" : "secondary"
                                 }
                               >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select role" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {roles.map((role) => (
-                                    <SelectItem key={role} value={role}>
-                                      {role.charAt(0).toUpperCase() +
-                                        role.slice(1)}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </motion.div>
-                          ) : (
-                            <motion.div
-                              key="role-display"
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -10 }}
-                              transition={{ duration: 0.2 }}
-                              className="py-2"
-                            >
-                              <Badge className={getRoleColor(userData.role)}>
-                                {userData.role.charAt(0).toUpperCase() +
-                                  userData.role.slice(1)}
+                                {userData.isActive ? "Active" : "Inactive"}
                               </Badge>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-
-                      {/* Email */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          <Mail className="w-4 h-4 inline mr-1" />
-                          Email
-                        </label>
-                        <AnimatePresence mode="wait">
-                          {isEditing ? (
-                            <motion.div
-                              key="email-input"
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -10 }}
-                              transition={{ duration: 0.2 }}
-                            >
-                              <Input
-                                type="email"
-                                value={editData?.email || ""}
-                                onChange={(e) =>
-                                  handleInputChange("email", e.target.value)
+                            </p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-700">
+                              Email Verified:
+                            </span>
+                            <p className="text-gray-900">
+                              <Badge
+                                variant={
+                                  userData.emailVerified
+                                    ? "default"
+                                    : "destructive"
                                 }
-                                className={errors.email ? "border-red-500" : ""}
-                                placeholder="Enter email address"
-                              />
-                              {errors.email && (
-                                <motion.p
-                                  initial={{ opacity: 0, y: -5 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  className="text-red-500 text-sm mt-1"
-                                >
-                                  {errors.email}
-                                </motion.p>
-                              )}
-                            </motion.div>
-                          ) : (
-                            <motion.div
-                              key="email-display"
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -10 }}
-                              transition={{ duration: 0.2 }}
-                              className="text-gray-900 py-2 flex items-center"
-                            >
-                              {userData.email}
-                              {userData.emailVerified && (
-                                <Check className="w-4 h-4 ml-2 text-green-500" />
-                              )}
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-
-                      {/* Phone */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          <Phone className="w-4 h-4 inline mr-1" />
-                          Phone
-                        </label>
-                        <AnimatePresence mode="wait">
-                          {isEditing ? (
-                            <motion.div
-                              key="phone-input"
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -10 }}
-                              transition={{ duration: 0.2 }}
-                            >
-                              <Input
-                                type="tel"
-                                value={editData?.phone || ""}
-                                onChange={(e) =>
-                                  handleInputChange("phone", e.target.value)
-                                }
-                                className={errors.phone ? "border-red-500" : ""}
-                                placeholder="Enter phone number"
-                              />
-                              {errors.phone && (
-                                <motion.p
-                                  initial={{ opacity: 0, y: -5 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  className="text-red-500 text-sm mt-1"
-                                >
-                                  {errors.phone}
-                                </motion.p>
-                              )}
-                            </motion.div>
-                          ) : (
-                            <motion.p
-                              key="phone-display"
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -10 }}
-                              transition={{ duration: 0.2 }}
-                              className="text-gray-900 py-2"
-                            >
-                              {userData.phone}
-                            </motion.p>
-                          )}
-                        </AnimatePresence>
-                      </div>
-
-                      {/* Title */}
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Job Title
-                        </label>
-                        <AnimatePresence mode="wait">
-                          {isEditing ? (
-                            <motion.div
-                              key="title-input"
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -10 }}
-                              transition={{ duration: 0.2 }}
-                            >
-                              <Input
-                                value={editData?.title || ""}
-                                onChange={(e) =>
-                                  handleInputChange("title", e.target.value)
-                                }
-                                placeholder="Enter job title"
-                              />
-                            </motion.div>
-                          ) : (
-                            <motion.p
-                              key="title-display"
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -10 }}
-                              transition={{ duration: 0.2 }}
-                              className="text-gray-900 py-2"
-                            >
-                              {userData.title || "Not specified"}
-                            </motion.p>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Address Information */}
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                      <MapPin className="w-5 h-5 mr-2" />
-                      Address Information
-                    </h3>
-
-                    {/* Present Address */}
-                    <div className="mb-6">
-                      <h4 className="text-md font-medium text-gray-800 mb-3">
-                        Present Address
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Country
-                          </label>
-                          <AnimatePresence mode="wait">
-                            {isEditing ? (
-                              <motion.div
-                                key="present-country-input"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.2 }}
                               >
-                                <Select
-                                  value={editData?.address?.present?.country}
-                                  onValueChange={(value) =>
-                                    handleInputChange(
-                                      "address.present.country",
-                                      value
-                                    )
-                                  }
+                                {userData.emailVerified
+                                  ? "Verified"
+                                  : "Not Verified"}
+                              </Badge>
+                            </p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-700">
+                              Last Login:
+                            </span>
+                            <p className="text-gray-900">
+                              {formatDate(userData.lastLogin)}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-700">
+                              Password Changed:
+                            </span>
+                            <p className="text-gray-900">
+                              {formatDate(userData.passwordChangedAt)}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-700">
+                              Member Since:
+                            </span>
+                            <p className="text-gray-900">
+                              {formatDate(userData.createdAt)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+                {activeTab == "referal" && (
+                  <>
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-2xl font-semibold text-gray-900">
+                        Referal Information
+                      </h2>
+                    </div>
+
+                    <motion.div className="space-y-8" layout>
+                      {/* Basic Information */}
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                          <User className="w-5 h-5 mr-2" />
+                          Basic Information
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {/* Full Name */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Name
+                            </label>
+                            <AnimatePresence mode="wait">
+                              {isEditing ? (
+                                <motion.div
+                                  key="name-input"
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  transition={{ duration: 0.2 }}
                                 >
-                                  <SelectTrigger
+                                  <Input
+                                    value={editData?.referral?.name || ""}
+                                    onChange={(e) =>
+                                      handleInputChange(
+                                        "referral.name",
+                                        e.target.value
+                                      )
+                                    }
                                     className={
-                                      errors.presentCountry
+                                      errors.referral?.name
                                         ? "border-red-500"
                                         : ""
                                     }
-                                  >
-                                    <SelectValue placeholder="Select country" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {countries.map((country) => (
-                                      <SelectItem key={country} value={country}>
-                                        {country}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                {errors.presentCountry && (
-                                  <motion.p
-                                    initial={{ opacity: 0, y: -5 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="text-red-500 text-sm mt-1"
-                                  >
-                                    {errors.presentCountry}
-                                  </motion.p>
-                                )}
-                              </motion.div>
-                            ) : (
-                              <motion.p
-                                key="present-country-display"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.2 }}
-                                className="text-gray-900 py-2"
-                              >
-                                {userData?.address?.present?.country || "N/A"}
-                              </motion.p>
-                            )}
-                          </AnimatePresence>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            State
-                          </label>
-                          <AnimatePresence mode="wait">
-                            {isEditing ? (
-                              <motion.div
-                                key="present-state-input"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.2 }}
-                              >
-                                <Input
-                                  value={
-                                    editData?.address?.present?.state || ""
-                                  }
-                                  onChange={(e) =>
-                                    handleInputChange(
-                                      "address.present.state",
-                                      e.target.value
-                                    )
-                                  }
-                                  placeholder="Enter state"
-                                />
-                              </motion.div>
-                            ) : (
-                              <motion.p
-                                key="present-state-display"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.2 }}
-                                className="text-gray-900 py-2"
-                              >
-                                {userData?.address?.present?.state ||
-                                  "Not specified"}
-                              </motion.p>
-                            )}
-                          </AnimatePresence>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            City
-                          </label>
-                          <AnimatePresence mode="wait">
-                            {isEditing ? (
-                              <motion.div
-                                key="present-city-input"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.2 }}
-                              >
-                                <Input
-                                  value={editData?.address?.present?.city || ""}
-                                  onChange={(e) =>
-                                    handleInputChange(
-                                      "address.present.city",
-                                      e.target.value
-                                    )
-                                  }
-                                  placeholder="Enter city"
-                                />
-                              </motion.div>
-                            ) : (
-                              <motion.p
-                                key="present-city-display"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.2 }}
-                                className="text-gray-900 py-2"
-                              >
-                                {userData?.address?.present?.city ||
-                                  "Not specified"}
-                              </motion.p>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Permanent Address */}
-                    <div>
-                      <h4 className="text-md font-medium text-gray-800 mb-3">
-                        Permanent Address
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Country
-                          </label>
-                          <AnimatePresence mode="wait">
-                            {isEditing ? (
-                              <motion.div
-                                key="permanent-country-input"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.2 }}
-                              >
-                                <Select
-                                  value={editData?.address?.permanent?.country}
-                                  onValueChange={(value) =>
-                                    handleInputChange(
-                                      "address.permanent.country",
-                                      value
-                                    )
-                                  }
+                                    placeholder="Enter full name"
+                                  />
+                                  {errors.referral?.name && (
+                                    <motion.p
+                                      initial={{ opacity: 0, y: -5 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      className="text-red-500 text-sm mt-1"
+                                    >
+                                      {errors.referral?.name}
+                                    </motion.p>
+                                  )}
+                                </motion.div>
+                              ) : (
+                                <motion.p
+                                  key="name-display"
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="text-gray-900 py-2"
                                 >
-                                  <SelectTrigger
+                                  {userData.referral?.name}
+                                </motion.p>
+                              )}
+                            </AnimatePresence>
+                          </div>
+
+                          {/* Relation */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Role
+                            </label>
+                            <AnimatePresence mode="wait">
+                              {isEditing ? (
+                                <motion.div
+                                  key="role-input"
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  transition={{ duration: 0.2 }}
+                                >
+                                  <Select
+                                    value={editData.referral?.type}
+                                    onValueChange={(value) =>
+                                      handleInputChange("role", value)
+                                    }
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select role" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {roles.map((role) => (
+                                        <SelectItem key={role} value={role}>
+                                          {role.charAt(0).toUpperCase() +
+                                            role.slice(1)}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </motion.div>
+                              ) : (
+                                <motion.div
+                                  key="role-display"
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="py-2"
+                                >
+                                  {userData.referral?.type}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+
+                          {/* Email */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              <Mail className="w-4 h-4 inline mr-1" />
+                              Email
+                            </label>
+                            <AnimatePresence mode="wait">
+                              {isEditing ? (
+                                <motion.div
+                                  key="email-input"
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  transition={{ duration: 0.2 }}
+                                >
+                                  <Input
+                                    type="email"
+                                    value={editData?.referral.email || ""}
+                                    onChange={(e) =>
+                                      handleInputChange("email", e.target.value)
+                                    }
                                     className={
-                                      errors.permanentCountry
+                                      errors.referral.email
                                         ? "border-red-500"
                                         : ""
                                     }
-                                  >
-                                    <SelectValue placeholder="Select country" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {countries.map((country) => (
-                                      <SelectItem key={country} value={country}>
-                                        {country}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                {errors.permanentCountry && (
-                                  <motion.p
-                                    initial={{ opacity: 0, y: -5 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="text-red-500 text-sm mt-1"
-                                  >
-                                    {errors.permanentCountry}
-                                  </motion.p>
-                                )}
-                              </motion.div>
-                            ) : (
-                              <motion.p
-                                key="permanent-country-display"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.2 }}
-                                className="text-gray-900 py-2"
-                              >
-                                {userData?.address?.permanent?.country}
-                              </motion.p>
-                            )}
-                          </AnimatePresence>
-                        </div>
+                                    placeholder="Enter email address"
+                                  />
+                                  {errors.referral.email && (
+                                    <motion.p
+                                      initial={{ opacity: 0, y: -5 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      className="text-red-500 text-sm mt-1"
+                                    >
+                                      {errors.referral.email}
+                                    </motion.p>
+                                  )}
+                                </motion.div>
+                              ) : (
+                                <motion.div
+                                  key="email-display"
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="text-gray-900 py-2 flex items-center"
+                                >
+                                  {userData.referral.email}
+                                  {userData.referral.emailVerified && (
+                                    <Check className="w-4 h-4 ml-2 text-green-500" />
+                                  )}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
 
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            State
-                          </label>
-                          <AnimatePresence mode="wait">
-                            {isEditing ? (
-                              <motion.div
-                                key="permanent-state-input"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.2 }}
-                              >
-                                <Input
-                                  value={
-                                    editData?.address?.permanent?.state || ""
-                                  }
-                                  onChange={(e) =>
-                                    handleInputChange(
-                                      "address.permanent.state",
-                                      e.target.value
-                                    )
-                                  }
-                                  placeholder="Enter state"
-                                />
-                              </motion.div>
-                            ) : (
-                              <motion.p
-                                key="permanent-state-display"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.2 }}
-                                className="text-gray-900 py-2"
-                              >
-                                {userData?.address?.permanent?.state ||
-                                  "Not specified"}
-                              </motion.p>
-                            )}
-                          </AnimatePresence>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            City
-                          </label>
-                          <AnimatePresence mode="wait">
-                            {isEditing ? (
-                              <motion.div
-                                key="permanent-city-input"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.2 }}
-                              >
-                                <Input
-                                  value={
-                                    editData?.address?.permanent?.city || ""
-                                  }
-                                  onChange={(e) =>
-                                    handleInputChange(
-                                      "address.permanent.city",
-                                      e.target.value
-                                    )
-                                  }
-                                  placeholder="Enter city"
-                                />
-                              </motion.div>
-                            ) : (
-                              <motion.p
-                                key="permanent-city-display"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.2 }}
-                                className="text-gray-900 py-2"
-                              >
-                                {userData?.address?.permanent?.city ||
-                                  "Not specified"}
-                              </motion.p>
-                            )}
-                          </AnimatePresence>
+                          {/* Phone */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              <Phone className="w-4 h-4 inline mr-1" />
+                              Phone
+                            </label>
+                            <AnimatePresence mode="wait">
+                              {isEditing ? (
+                                <motion.div
+                                  key="phone-input"
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  transition={{ duration: 0.2 }}
+                                >
+                                  <Input
+                                    type="tel"
+                                    value={editData?.referral.mobile || ""}
+                                    onChange={(e) =>
+                                      handleInputChange(
+                                        "referral.mobile",
+                                        e.target.value
+                                      )
+                                    }
+                                    className={
+                                      errors.referral.mobile
+                                        ? "border-red-500"
+                                        : ""
+                                    }
+                                    placeholder="Enter phone number"
+                                  />
+                                  {errors.phone && (
+                                    <motion.p
+                                      initial={{ opacity: 0, y: -5 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      className="text-red-500 text-sm mt-1"
+                                    >
+                                      {errors.referral.mobile}
+                                    </motion.p>
+                                  )}
+                                </motion.div>
+                              ) : (
+                                <motion.p
+                                  key="phone-display"
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="text-gray-900 py-2"
+                                >
+                                  {userData.referral.mobile}
+                                </motion.p>
+                              )}
+                            </AnimatePresence>
+                          </div>
                         </div>
                       </div>
+                    </motion.div>
+                  </>
+                )}
+                {activeTab == "security" && (
+                  <>
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-2xl font-semibold text-gray-900">
+                        Comming soon...
+                      </h2>
                     </div>
-                  </div>
-
-                  {/* Bio */}
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">
-                      About
-                    </h3>
-                    <AnimatePresence mode="wait">
-                      {isEditing ? (
-                        <motion.div
-                          key="bio-input"
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <Textarea
-                            value={editData?.bio || ""}
-                            onChange={(e) =>
-                              handleInputChange("bio", e.target.value)
-                            }
-                            className={`min-h-[100px] ${
-                              errors.bio ? "border-red-500" : ""
-                            }`}
-                            placeholder="Tell us about yourself"
-                          />
-                          {errors.bio && (
-                            <motion.p
-                              initial={{ opacity: 0, y: -5 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              className="text-red-500 text-sm mt-1"
-                            >
-                              {errors.bio}
-                            </motion.p>
-                          )}
-                        </motion.div>
-                      ) : (
-                        <motion.p
-                          key="bio-display"
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          transition={{ duration: 0.2 }}
-                          className="text-gray-900 py-2 leading-relaxed"
-                        >
-                          {userData.bio || "No bio available"}
-                        </motion.p>
-                      )}
-                    </AnimatePresence>
-                  </div>
-
-                  {/* Account Information */}
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                      <Shield className="w-5 h-5 mr-2" />
-                      Account Information
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-                      <div>
-                        <span className="font-medium text-gray-700">
-                          User ID:
-                        </span>
-                        <p className="text-gray-900 font-mono">
-                          {userData._id}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-700">
-                          Account Status:
-                        </span>
-                        <p className="text-gray-900">
-                          <Badge
-                            variant={
-                              userData.isActive ? "default" : "secondary"
-                            }
-                          >
-                            {userData.isActive ? "Active" : "Inactive"}
-                          </Badge>
-                        </p>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-700">
-                          Email Verified:
-                        </span>
-                        <p className="text-gray-900">
-                          <Badge
-                            variant={
-                              userData.emailVerified ? "default" : "destructive"
-                            }
-                          >
-                            {userData.emailVerified
-                              ? "Verified"
-                              : "Not Verified"}
-                          </Badge>
-                        </p>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-700">
-                          Last Login:
-                        </span>
-                        <p className="text-gray-900">
-                          {formatDate(userData.lastLogin)}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-700">
-                          Password Changed:
-                        </span>
-                        <p className="text-gray-900">
-                          {formatDate(userData.passwordChangedAt)}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-700">
-                          Member Since:
-                        </span>
-                        <p className="text-gray-900">
-                          {formatDate(userData.createdAt)}
-                        </p>
-                      </div>
+                  </>
+                )}
+                {activeTab == "notifications" && (
+                  <>
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-2xl font-semibold text-gray-900">
+                        Comming soon...
+                      </h2>
                     </div>
-                  </div>
-                </motion.div>
+                  </>
+                )}
+                {activeTab == "billing" && (
+                  <>
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-2xl font-semibold text-gray-900">
+                        Comming soon...
+                      </h2>
+                    </div>
+                  </>
+                )}
+                {activeTab == "activity" && (
+                  <>
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-2xl font-semibold text-gray-900">
+                        Comming soon...
+                      </h2>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           </motion.div>

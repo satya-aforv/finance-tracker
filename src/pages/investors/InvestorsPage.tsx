@@ -106,7 +106,11 @@ const InvestorsPage: React.FC = () => {
         setTotalPages(response.pagination.pages);
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to fetch investors");
+      toast.error(
+        error.response?.data?.message ||
+          error?.message ||
+          "Failed to fetch investors"
+      );
     } finally {
       setTimeout(() => {
         setLoading(false);
@@ -176,7 +180,12 @@ const InvestorsPage: React.FC = () => {
       setShowCreateModal(false);
       fetchInvestors();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to create investor");
+      console.log(error, "error");
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to create investor"
+      );
     }
   };
 
@@ -190,7 +199,11 @@ const InvestorsPage: React.FC = () => {
       setSelectedInvestor(null);
       fetchInvestors();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to update investor");
+      toast.error(
+        error.response?.data?.message ||
+          error?.message ||
+          "Failed to update investor"
+      );
     }
   };
 
@@ -207,7 +220,11 @@ const InvestorsPage: React.FC = () => {
       toast.success("Investor deleted successfully");
       fetchInvestors();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to delete investor");
+      toast.error(
+        error.response?.data?.message ||
+          error?.message ||
+          "Failed to delete investor"
+      );
     }
   };
 
@@ -235,7 +252,9 @@ const InvestorsPage: React.FC = () => {
       fetchInvestors();
     } catch (error: any) {
       toast.error(
-        error.response?.data?.message || "Failed to create user account"
+        error.response?.data?.message ||
+          error?.message ||
+          "Failed to create user account"
       );
     } finally {
       setActionLoading((prev) => ({ ...prev, [loadingKey]: false }));
@@ -285,7 +304,11 @@ const InvestorsPage: React.FC = () => {
       setUserAccountModal({ show: false, investor: null, type: "reset" });
       fetchInvestors();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to reset password");
+      toast.error(
+        error.response?.data?.message ||
+          error?.message ||
+          "Failed to reset password"
+      );
     } finally {
       setActionLoading((prev) => ({ ...prev, [loadingKey]: false }));
     }
@@ -379,7 +402,7 @@ const InvestorsPage: React.FC = () => {
 
       fetchInvestors();
     } catch (error: any) {
-      toast.error("Failed to bulk create user accounts");
+      toast.error(error?.message || "Failed to bulk create user accounts");
     }
   };
 
@@ -808,7 +831,7 @@ const UserAccountManagementForm: React.FC<UserAccountManagementFormProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!password.trim()) {
-      toast.error("Password is required");
+      toast.error(e?.message || "Password is required");
       return;
     }
     onSubmit({ password, sendCredentials });

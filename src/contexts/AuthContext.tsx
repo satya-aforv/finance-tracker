@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User } from '../types';
-import { authService } from '../services/auth';
-import toast from 'react-hot-toast';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { User } from "../types";
+import { authService } from "../services/auth";
+import toast from "react-hot-toast";
 
 interface AuthContextType {
   user: User | null;
@@ -14,7 +14,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -47,9 +49,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       authService.setToken(response.token);
       authService.storeUser(response.user);
       setUser(response.user);
-      toast.success('Login successful!');
+      toast.success("Login successful!");
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Login failed';
+      const message =
+        error.response?.data?.message || error?.message || "Login failed";
       toast.error(message);
       throw error;
     }
@@ -61,9 +64,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       authService.setToken(response.token);
       authService.storeUser(response.user);
       setUser(response.user);
-      toast.success('Registration successful!');
+      toast.success("Registration successful!");
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Registration failed';
+      const message =
+        error.response?.data?.message ||
+        error?.message ||
+        "Registration failed";
       toast.error(message);
       throw error;
     }
@@ -72,7 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     authService.removeToken();
     setUser(null);
-    toast.success('Logged out successfully');
+    toast.success("Logged out successfully");
   };
 
   const updateUser = (userData: Partial<User>) => {
@@ -92,17 +98,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateUser,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };

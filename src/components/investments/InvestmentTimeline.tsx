@@ -68,7 +68,7 @@ const InvestmentTimeline: React.FC<InvestmentTimelineProps> = ({
       const response = await investmentsService.getTimeline(investmentId);
       setTimeline(response.data.timeline || []);
     } catch (error: any) {
-      toast.error("Failed to fetch timeline");
+      toast.error(error?.message || "Failed to fetch timeline");
     } finally {
       setLoading(false);
     }
@@ -98,7 +98,9 @@ const InvestmentTimeline: React.FC<InvestmentTimelineProps> = ({
       fetchTimeline();
     } catch (error: any) {
       toast.error(
-        error.response?.data?.message || "Failed to add timeline entry"
+        error.response?.data?.message ||
+          error?.message ||
+          "Failed to add timeline entry"
       );
     } finally {
       setAddingEntry(false);
