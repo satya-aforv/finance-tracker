@@ -710,7 +710,7 @@ const InvestorForm: React.FC<InvestorFormProps> = ({
               { id: "basicDetails", label: "Basic Information", icon: User },
               { id: "address", label: "Address", icon: User },
               { id: "bankDetails", label: "Bank Details", icon: TrendingUp },
-              { id: "investments", label: "Investments", icon: TrendingUp },
+              // { id: "investments", label: "Investments", icon: TrendingUp },
               { id: "referalPolicy", label: "Referal Policy", icon: FileText },
             ].map((tab) => {
               if (

@@ -2,12 +2,11 @@
 import React, { useState } from "react";
 import {
   Calendar,
-  DollarSign,
+  IndianRupeeIcon,
   TrendingUp,
   User,
   FileText,
   Clock,
-  CircleDollarSign,
   MessageCircleCode,
   X,
 } from "lucide-react";
@@ -366,7 +365,7 @@ const InvestmentDetails: React.FC<InvestmentDetailsProps> = ({
                 {
                   id: "requestPrincipal",
                   label: "Principal Request",
-                  icon: CircleDollarSign,
+                  icon: IndianRupeeIcon,
                 },
               ].map((tab) => (
                 <button
@@ -399,7 +398,7 @@ const InvestmentDetails: React.FC<InvestmentDetailsProps> = ({
                   <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg border border-green-200">
                     <div className="flex items-center">
                       <div className="p-3 bg-green-500 rounded-lg">
-                        <DollarSign className="h-6 w-6 text-white" />
+                        <IndianRupeeIcon className="h-6 w-6 text-white" />
                       </div>
                       <div className="ml-4">
                         <p className="text-sm font-medium text-green-700">

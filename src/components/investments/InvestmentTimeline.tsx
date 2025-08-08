@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import {
   Calendar,
-  DollarSign,
+  IndianRupeeIcon,
   FileText,
   MessageSquare,
   AlertTriangle,
@@ -109,7 +109,7 @@ const InvestmentTimeline: React.FC<InvestmentTimelineProps> = ({
 
   const getTimelineIcon = (type: string) => {
     const icons = {
-      investment_created: <DollarSign className="h-4 w-4" />,
+      investment_created: <IndianRupeeIcon className="h-4 w-4" />,
       payment_received: <CheckCircle className="h-4 w-4" />,
       payment_overdue: <AlertTriangle className="h-4 w-4" />,
       document_uploaded: <Upload className="h-4 w-4" />,

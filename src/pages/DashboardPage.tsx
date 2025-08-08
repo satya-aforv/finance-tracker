@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import {
   TrendingUp,
   Users,
-  DollarSign,
+  IndianRupeeIcon,
   AlertTriangle,
   CreditCard,
   FileText,
@@ -534,7 +534,7 @@ const DashboardPage: React.FC = () => {
           value={formatCurrency(
             dashboardData.stats.totalValue || userOverview?.totalValue || 0
           )}
-          icon={DollarSign}
+          icon={IndianRupeeIcon}
           color="purple"
           change={
             trendingMetrics?.revenue?.percentage

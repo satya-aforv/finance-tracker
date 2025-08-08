@@ -1,6 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Download, FileText, TrendingUp, Users, DollarSign } from 'lucide-react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from "react";
+import {
+  Download,
+  FileText,
+  TrendingUp,
+  Users,
+  IndianRupeeIcon,
+} from "lucide-react";
+import { motion } from "framer-motion";
 import {
   BarChart,
   Bar,
@@ -13,13 +19,13 @@ import {
   Pie,
   Cell,
   LineChart,
-  Line
-} from 'recharts';
-import Button from '../../components/common/Button';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import StatCard from '../../components/common/StatCard';
-import { reportsService } from '../../services/reports';
-import toast from 'react-hot-toast';
+  Line,
+} from "recharts";
+import Button from "../../components/common/Button";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import StatCard from "../../components/common/StatCard";
+import { reportsService } from "../../services/reports";
+import toast from "react-hot-toast";
 
 const ReportsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -38,13 +44,13 @@ const ReportsPage: React.FC = () => {
           investorResponse,
           planResponse,
           paymentResponse,
-          overdueResponse
+          overdueResponse,
         ] = await Promise.all([
           reportsService.getDashboardReport(),
           reportsService.getInvestorSummary(),
           reportsService.getPlanPerformance(),
           reportsService.getPaymentAnalysis(),
-          reportsService.getOverduePayments()
+          reportsService.getOverduePayments(),
         ]);
 
         setDashboardData(dashboardResponse.data);
@@ -53,7 +59,7 @@ const ReportsPage: React.FC = () => {
         setPaymentAnalysis(paymentResponse.data);
         setOverduePayments(overdueResponse.data);
       } catch (error: any) {
-        toast.error('Failed to load reports data');
+        toast.error("Failed to load reports data");
       } finally {
         setLoading(false);
       }
@@ -63,21 +69,23 @@ const ReportsPage: React.FC = () => {
   }, []);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
       minimumFractionDigits: 0,
     }).format(amount);
   };
 
-  const handleExport = async (type: 'investors' | 'investments' | 'payments') => {
+  const handleExport = async (
+    type: "investors" | "investments" | "payments"
+  ) => {
     try {
       const response = await reportsService.exportData(type);
       // Create download link
       const url = window.URL.createObjectURL(new Blob([response]));
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.setAttribute('download', `${type}_report.csv`);
+      link.setAttribute("download", `${type}_report.csv`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -87,7 +95,7 @@ const ReportsPage: React.FC = () => {
     }
   };
 
-  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+  const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"];
 
   if (loading) {
     return (
@@ -106,19 +114,23 @@ const ReportsPage: React.FC = () => {
         className="flex justify-between items-center"
       >
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reports & Analytics</h1>
-          <p className="text-gray-600">Comprehensive insights into your investment portfolio</p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Reports & Analytics
+          </h1>
+          <p className="text-gray-600">
+            Comprehensive insights into your investment portfolio
+          </p>
         </div>
         <div className="flex space-x-3">
-          <Button variant="outline" onClick={() => handleExport('investors')}>
+          <Button variant="outline" onClick={() => handleExport("investors")}>
             <Download className="h-4 w-4 mr-2" />
             Export Investors
           </Button>
-          <Button variant="outline" onClick={() => handleExport('investments')}>
+          <Button variant="outline" onClick={() => handleExport("investments")}>
             <Download className="h-4 w-4 mr-2" />
             Export Investments
           </Button>
-          <Button variant="outline" onClick={() => handleExport('payments')}>
+          <Button variant="outline" onClick={() => handleExport("payments")}>
             <Download className="h-4 w-4 mr-2" />
             Export Payments
           </Button>
@@ -154,7 +166,7 @@ const ReportsPage: React.FC = () => {
           <StatCard
             title="Total Payments"
             value={dashboardData.summary.totalPayments}
-            icon={DollarSign}
+            icon={IndianRupeeIcon}
             color="yellow"
           />
         </motion.div>
@@ -170,7 +182,9 @@ const ReportsPage: React.FC = () => {
             transition={{ delay: 0.2 }}
             className="bg-white p-6 rounded-lg shadow-sm border border-gray-200"
           >
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Investment Trends</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Monthly Investment Trends
+            </h3>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={dashboardData.monthlyInvestments}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -196,7 +210,9 @@ const ReportsPage: React.FC = () => {
             transition={{ delay: 0.3 }}
             className="bg-white p-6 rounded-lg shadow-sm border border-gray-200"
           >
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Plan Performance</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Plan Performance
+            </h3>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={planPerformance.slice(0, 5)}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -217,7 +233,9 @@ const ReportsPage: React.FC = () => {
             transition={{ delay: 0.4 }}
             className="bg-white p-6 rounded-lg shadow-sm border border-gray-200"
           >
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Investment Status Distribution</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Investment Status Distribution
+            </h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
@@ -229,9 +247,14 @@ const ReportsPage: React.FC = () => {
                   paddingAngle={5}
                   dataKey="count"
                 >
-                  {dashboardData.statusWiseData.map((entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
+                  {dashboardData.statusWiseData.map(
+                    (entry: any, index: number) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    )
+                  )}
                 </Pie>
                 <Tooltip />
               </PieChart>
@@ -260,7 +283,9 @@ const ReportsPage: React.FC = () => {
             transition={{ delay: 0.5 }}
             className="bg-white p-6 rounded-lg shadow-sm border border-gray-200"
           >
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Methods</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Payment Methods
+            </h3>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={paymentAnalysis.paymentsByMethod}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -283,7 +308,9 @@ const ReportsPage: React.FC = () => {
           className="bg-white rounded-lg shadow-sm border border-gray-200"
         >
           <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Top Investors by Investment Amount</h3>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Top Investors by Investment Amount
+            </h3>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -335,11 +362,13 @@ const ReportsPage: React.FC = () => {
                       {investor.activeInvestments}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        investor.status === 'active' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          investor.status === "active"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
                         {investor.status}
                       </span>
                     </td>
@@ -360,7 +389,9 @@ const ReportsPage: React.FC = () => {
           className="bg-white rounded-lg shadow-sm border border-gray-200"
         >
           <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Overdue Payments</h3>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Overdue Payments
+            </h3>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">

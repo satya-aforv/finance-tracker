@@ -9,7 +9,7 @@ import {
   Plus,
   TrendingUp,
   Calendar,
-  DollarSign,
+  IndianRupeeIcon,
   FileText,
   Edit,
   Save,
@@ -173,21 +173,16 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
           await Promise.all([
             investorsService.getInvestor(investorId),
             investmentsService.getInvestments({ investor: investorId }),
-            plansService.getActivePlans(),
+            plansService.getUserSpecificPlans(),
           ]);
 
         setInvestor(investorResponse.data);
-        console.log(investorResponse?.data, "investorResponse");
-        console.log(
-          investorResponse?.data?.investments,
-          "investorResponse?.data?.investments"
-        );
+
         const responseInvestMent = investmentsResponse?.data?.length
           ? investmentsResponse.data // Check if array exists and has length
           : investorResponse?.data?.investments?.length
           ? investorResponse.data.investments
           : [];
-        console.log(responseInvestMent, "investmentsResponse");
         setInvestments(responseInvestMent);
 
         setPlans(plansResponse.data || []);
@@ -379,7 +374,7 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
           >
             <div className="flex items-center">
               <div className="p-3 bg-blue-100 rounded-lg">
-                <DollarSign className="h-6 w-6 text-blue-600" />
+                <IndianRupeeIcon className="h-6 w-6 text-blue-600" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">

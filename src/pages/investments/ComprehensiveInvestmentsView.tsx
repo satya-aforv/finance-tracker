@@ -8,7 +8,7 @@ import {
   Plus,
   TrendingUp,
   Calendar,
-  DollarSign,
+  IndianRupeeIcon,
   FileText,
   Edit,
   Save,
@@ -26,7 +26,6 @@ import {
   MessageCircleCode,
   CreditCard,
   Receipt,
-  CircleDollarSign,
   InfoIcon,
   Check,
 } from "lucide-react";
@@ -697,7 +696,7 @@ const ComprehensiveInvestmentsView = ({
           >
             <div className="flex items-center">
               <div className="p-3 bg-blue-100 rounded-lg">
-                <DollarSign className="h-6 w-6 text-blue-600" />
+                <IndianRupeeIcon className="h-6 w-6 text-blue-600" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">
@@ -792,12 +791,12 @@ const ComprehensiveInvestmentsView = ({
                 {
                   id: "requestPrincipal",
                   label: "Principal Request",
-                  icon: CircleDollarSign,
+                  icon: IndianRupeeIcon,
                 },
                 {
                   id: "principalRequests",
                   label: "Principal Request",
-                  icon: CircleDollarSign,
+                  icon: IndianRupeeIcon,
                 },
                 {
                   id: "overview_investor",
@@ -875,7 +874,7 @@ const ComprehensiveInvestmentsView = ({
                   <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg border border-green-200">
                     <div className="flex items-center">
                       <div className="p-3 bg-green-500 rounded-lg">
-                        <DollarSign className="h-6 w-6 text-white" />
+                        <IndianRupeeIcon className="h-6 w-6 text-white" />
                       </div>
                       <div className="ml-4">
                         <p className="text-sm font-medium text-green-700">
@@ -1189,7 +1188,7 @@ const ComprehensiveInvestmentsView = ({
                   <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg border border-green-200">
                     <div className="flex items-center">
                       <div className="p-3 bg-green-500 rounded-lg">
-                        <DollarSign className="h-6 w-6 text-white" />
+                        <IndianRupeeIcon className="h-6 w-6 text-white" />
                       </div>
                       <div className="ml-4">
                         <p className="text-sm font-medium text-green-700">

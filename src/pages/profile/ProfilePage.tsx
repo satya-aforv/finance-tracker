@@ -1225,7 +1225,7 @@ export default function UserProfile({
                     </motion.div>
                   </>
                 )}
-                {activeTab == "referal" && (
+                {activeTab == "referal" && userData?.referral?._id ? (
                   <>
                     <div className="flex justify-between items-center mb-6">
                       <h2 className="text-2xl font-semibold text-gray-900">
@@ -1457,6 +1457,14 @@ export default function UserProfile({
                         </div>
                       </div>
                     </motion.div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-2xl font-semibold text-gray-900">
+                        No Data
+                      </h2>
+                    </div>
                   </>
                 )}
                 {activeTab == "security" && (
