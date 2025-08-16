@@ -235,14 +235,13 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
       }
     };
 
-    if (investment?.investmentId) {
-      fetchInvestment(investment?.investmentId);
+    if (investment?._id) {
+      fetchInvestment(investment?._id);
     }
-  }, [investment?.investmentId, showInvestmentForm]);
+  }, [investment?._id, showInvestmentForm]);
 
   const fetchInvestments = async () => {
     try {
-      console.log(investment, "investment");
       const response = await investmentsService.getInvestment(investmentId);
 
       if (!response?.data) {
@@ -285,6 +284,7 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
       overdue: "bg-red-100 text-red-800",
       pending: "bg-red-100 text-red-600",
       Pending: "bg-red-100 text-red-600",
+      Declined: "bg-red-100 text-red-600",
     };
 
     return (
@@ -300,17 +300,12 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
 
   const handleRemarksSubmit = async (data) => {
     try {
-      await investmentsService.addRemark(
-        investment?.investmentId,
-        data.remarks
-      );
+      await investmentsService.addRemark(investment?._id, data.remarks);
       toast.success("Remarks added successfully");
       setShowRemarksForm(false);
 
       // Refresh investment data
-      const response = await investmentsService.getInvestment(
-        investment?.investmentId
-      );
+      const response = await investmentsService.getInvestment(investment?._id);
       setInvestment(response.data || []);
     } catch (error) {
       console.error("Error adding remarks:", error);
@@ -1129,9 +1124,7 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                                             animate={{ opacity: 1, x: 0 }}
                                           >
                                             <InvestmentTimeline
-                                              investmentId={
-                                                investment?.investmentId
-                                              }
+                                              investmentId={investment?._id}
                                               isEditable={canManage}
                                             />
                                           </motion.div>
@@ -1209,59 +1202,85 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                                                   <td className="px-4 w-20 py-4 justify-space-between whitespace-nowrap">
                                                     <div className="flex items-center space-x-2">
                                                       <span title="Approve">
-                                                        {[
-                                                          "Declined",
-                                                          "Pending",
-                                                        ].includes(
+                                                        {["Pending"].includes(
                                                           payment?.status
                                                         ) ? (
-                                                          <span title="Approve">
-                                                            <Check
-                                                              className="h-5 w-5 text-green-400 cursor-pointer"
-                                                              onClick={() => {
-                                                                setPrincipalRequest(
-                                                                  payment
-                                                                );
-                                                                setShowConfirmModal(
-                                                                  true
-                                                                );
-                                                                setInvestmentId(
-                                                                  investment?._id ||
-                                                                    investment?.investmentId
-                                                                );
-                                                                setConfirmModalType(
-                                                                  "principalRequest"
-                                                                );
-                                                              }}
-                                                            />
-                                                          </span>
+                                                          <div className="grid grid-cols-2 gap-2">
+                                                            <span title="Approve">
+                                                              <Check
+                                                                className="h-5 w-5 text-green-400 cursor-pointer"
+                                                                onClick={() => {
+                                                                  setPrincipalRequest(
+                                                                    payment
+                                                                  );
+                                                                  setShowConfirmModal(
+                                                                    true
+                                                                  );
+                                                                  console.log(
+                                                                    investment,
+                                                                    "investment"
+                                                                  );
+                                                                  setInvestmentId(
+                                                                    investment?._id
+                                                                  );
+                                                                  setConfirmModalType(
+                                                                    "principalRequest"
+                                                                  );
+                                                                }}
+                                                              />
+                                                            </span>
+                                                            <span title="Decline">
+                                                              <X
+                                                                className="h-5 w-5 text-red-400 cursor-pointer"
+                                                                onClick={() => {
+                                                                  setPrincipalRequest(
+                                                                    payment
+                                                                  );
+                                                                  setShowDeclineModal(
+                                                                    true
+                                                                  );
+                                                                  setInvestmentId(
+                                                                    investment?._id
+                                                                  );
+                                                                  setConfirmModalType(
+                                                                    "principalRequest"
+                                                                  );
+                                                                }}
+                                                              />
+                                                            </span>
+                                                          </div>
                                                         ) : null}
                                                       </span>
                                                       <span title="Decline">
-                                                        {["Approved"].includes(
+                                                        {[
+                                                          "Approved",
+                                                          "Declined",
+                                                        ].includes(
                                                           payment?.status
-                                                        ) ? (
-                                                          <span title="Decline">
-                                                            <X
-                                                              className="h-5 w-5 text-red-400 cursor-pointer"
-                                                              onClick={() => {
-                                                                setPrincipalRequest(
-                                                                  payment
-                                                                );
-                                                                setShowDeclineModal(
-                                                                  true
-                                                                );
-                                                                setInvestmentId(
-                                                                  investment?._id ||
-                                                                    investment?.investmentId
-                                                                );
-                                                                setConfirmModalType(
-                                                                  "principalRequest"
-                                                                );
-                                                              }}
-                                                            />
-                                                          </span>
-                                                        ) : null}
+                                                        )
+                                                          ? "N/A"
+                                                          : // (
+                                                            //   <span title="Decline">
+                                                            //     <X
+                                                            //       className="h-5 w-5 text-red-400 cursor-pointer"
+                                                            //       onClick={() => {
+                                                            //         setPrincipalRequest(
+                                                            //           payment
+                                                            //         );
+                                                            //         setShowDeclineModal(
+                                                            //           true
+                                                            //         );
+                                                            //         setInvestmentId(
+                                                            //           investment?._id
+                                                            //         );
+                                                            //         setConfirmModalType(
+                                                            //           "principalRequest"
+                                                            //         );
+                                                            //       }}
+                                                            //     />
+                                                            //   </span>
+                                                            // )
+                                                            null}
                                                       </span>
                                                     </div>
                                                   </td>
@@ -1334,55 +1353,75 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
                                                   <td className="px-4 w-20 py-4 justify-space-between whitespace-nowrap">
                                                     <div className="flex items-center space-x-2">
                                                       <span title="Approve">
-                                                        {[
-                                                          "Pending",
-                                                          "Declined",
-                                                        ].includes(
+                                                        {["Pending"].includes(
                                                           payment?.status
                                                         ) ? (
-                                                          <Check
-                                                            className="h-5 w-5 text-green-400 cursor-pointer"
-                                                            onClick={() => {
-                                                              setExtInvestmentRequest(
-                                                                payment
-                                                              );
-                                                              setInvestmentId(
-                                                                investment?._id ||
-                                                                  investment?.investmentId
-                                                              );
-                                                              setShowConfirmModal(
-                                                                true
-                                                              );
-                                                              setConfirmModalType(
-                                                                "extInvestmentRequest"
-                                                              );
-                                                            }}
-                                                          />
+                                                          <div className="grid grid-cols-2 gap-2">
+                                                            <Check
+                                                              className="h-5 w-5 text-green-400 cursor-pointer"
+                                                              onClick={() => {
+                                                                setExtInvestmentRequest(
+                                                                  payment
+                                                                );
+                                                                setInvestmentId(
+                                                                  investment?._id
+                                                                );
+                                                                setShowConfirmModal(
+                                                                  true
+                                                                );
+                                                                setConfirmModalType(
+                                                                  "extInvestmentRequest"
+                                                                );
+                                                              }}
+                                                            />
+                                                            <X
+                                                              className="h-5 w-5 text-red-400 cursor-pointer"
+                                                              onClick={() => {
+                                                                setExtInvestmentRequest(
+                                                                  payment
+                                                                );
+                                                                setInvestmentId(
+                                                                  investment?._id
+                                                                );
+                                                                setShowDeclineModal(
+                                                                  true
+                                                                );
+                                                                setConfirmModalType(
+                                                                  "extInvestmentRequest"
+                                                                );
+                                                              }}
+                                                            />
+                                                          </div>
                                                         ) : null}
                                                       </span>
                                                       <span title="Decline">
-                                                        {["Approved"].includes(
+                                                        {[
+                                                          "Approved",
+                                                          "Declined",
+                                                        ].includes(
                                                           payment?.status
-                                                        ) ? (
-                                                          <X
-                                                            className="h-5 w-5 text-red-400 cursor-pointer"
-                                                            onClick={() => {
-                                                              setExtInvestmentRequest(
-                                                                payment
-                                                              );
-                                                              setInvestmentId(
-                                                                investment?._id ||
-                                                                  investment?.investmentId
-                                                              );
-                                                              setShowDeclineModal(
-                                                                true
-                                                              );
-                                                              setConfirmModalType(
-                                                                "extInvestmentRequest"
-                                                              );
-                                                            }}
-                                                          />
-                                                        ) : null}
+                                                        )
+                                                          ? "N/A"
+                                                          : // (
+                                                            //   <X
+                                                            //     className="h-5 w-5 text-red-400 cursor-pointer"
+                                                            //     onClick={() => {
+                                                            //       setExtInvestmentRequest(
+                                                            //         payment
+                                                            //       );
+                                                            //       setInvestmentId(
+                                                            //         investment?._id
+                                                            //       );
+                                                            //       setShowDeclineModal(
+                                                            //         true
+                                                            //       );
+                                                            //       setConfirmModalType(
+                                                            //         "extInvestmentRequest"
+                                                            //       );
+                                                            //     }}
+                                                            //   />
+                                                            // )
+                                                            null}
                                                       </span>
                                                     </div>
                                                   </td>
@@ -1508,7 +1547,7 @@ const ComprehensiveInvestorView = ({ investorId, onBack }) => {
         size="lg"
       >
         <CreateRemarksForm
-          investmentId={investment?.investmentId}
+          investmentId={investment?._id}
           investment={investment}
           paymentSchedule={paymentSchedule}
           onSubmit={handleRemarksSubmit}
