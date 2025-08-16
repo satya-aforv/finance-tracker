@@ -1889,39 +1889,35 @@ const ComprehensiveInvestmentsView = ({
                         </td>
                         <td className="px-4 w-20 py-4 justify-space-between whitespace-nowrap">
                           <div className="flex items-center space-x-2">
-                            <span title="Add Remarks">
-                              {payment?.status === "Approved" ? (
-                                <span title="Approved">
-                                  <Check className="h-5 w-5 text-green-400 cursor-not-allowed" />
+                            <span title="Approve">
+                              {["Declined", "Pending"].includes(
+                                payment?.status
+                              ) ? (
+                                <span title="Approve">
+                                  <Check
+                                    className="h-5 w-5 text-green-400 cursor-pointer"
+                                    onClick={() => {
+                                      setPrincipalRequest(payment);
+                                      setShowConfirmModal(true);
+                                      setConfirmModalType("principalRequest");
+                                    }}
+                                  />
                                 </span>
                               ) : null}
-                              {/* (
-                                <Check
-                                  onClick={() => {
-                                    setPrincipalRequest(payment);
-                                    setShowConfirmModal(true);
-                                    setConfirmModalType("principalRequest");
-                                  }}
-                                  className="h-5 w-5 text-green-600 cursor-pointer"
-                                />
-                              ) */}
                             </span>
-                            <span title="Add Remarks">
-                              {payment?.status === "Declined" ? (
-                                <span title="Declined">
-                                  <X className="h-5 w-5 text-red-400 cursor-not-allowed" />
+                            <span title="Decline">
+                              {["Approved"].includes(payment?.status) ? (
+                                <span title="Decline">
+                                  <X
+                                    className="h-5 w-5 text-red-400 cursor-pointer"
+                                    onClick={() => {
+                                      setPrincipalRequest(payment);
+                                      setShowDeclineModal(true);
+                                      setConfirmModalType("principalRequest");
+                                    }}
+                                  />
                                 </span>
                               ) : null}
-                              {/* (
-                                <X
-                                  onClick={() => {
-                                    setPrincipalRequest(payment);
-                                    setShowDeclineModal(true);
-                                    setConfirmModalType("principalRequest");
-                                  }}
-                                  className="h-5 w-5 text-red-600 cursor-pointer"
-                                />
-                              ) */}
                             </span>
                           </div>
                         </td>
@@ -2280,34 +2276,30 @@ const ComprehensiveInvestmentsView = ({
                         <td className="px-4 w-20 py-4 justify-space-between whitespace-nowrap">
                           <div className="flex items-center space-x-2">
                             <span title="Add Remarks">
-                              {payment?.status === "Approved" ? (
-                                <Check className="h-5 w-5 text-green-400 cursor-not-allowed" />
-                              ) : null}
-                              {/* (
+                              {["Pending", "Declined"].includes(
+                                payment?.status
+                              ) ? (
                                 <Check
+                                  className="h-5 w-5 text-green-400 cursor-pointer"
                                   onClick={() => {
                                     setExtInvestmentRequest(payment);
                                     setShowConfirmModal(true);
                                     setConfirmModalType("extInvestmentRequest");
                                   }}
-                                  className="h-5 w-5 text-green-600 cursor-pointer"
                                 />
-                              ) */}
+                              ) : null}
                             </span>
                             <span title="Add Remarks">
-                              {payment?.status === "Declined" ? (
-                                <X className="h-5 w-5 text-red-400 cursor-not-allowed" />
-                              ) : null}
-                              {/* (
+                              {["Approved"].includes(payment?.status) ? (
                                 <X
+                                  className="h-5 w-5 text-red-400 cursor-pointer"
                                   onClick={() => {
                                     setExtInvestmentRequest(payment);
                                     setShowDeclineModal(true);
                                     setConfirmModalType("extInvestmentRequest");
                                   }}
-                                  className="h-5 w-5 text-red-600 cursor-pointer"
                                 />
-                              ) */}
+                              ) : null}
                             </span>
                           </div>
                         </td>
